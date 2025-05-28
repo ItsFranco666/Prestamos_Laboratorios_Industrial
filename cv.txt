@@ -1,0 +1,1409 @@
+# Project Structure:
+# university_management/
+# ├── main.py
+# ├── database/
+# │   ├── __init__.py
+# │   ├── connection.py
+# │   └── models.py
+# ├── views/
+# │   ├── __init__.py
+# │   ├── main_window.py
+# │   ├── student_management.py
+# │   ├── room_management.py
+# │   ├── equipment_inventory.py
+# │   ├── room_loans.py
+# │   └── equipment_loans.py
+# ├── utils/
+# │   ├── __init__.py
+# │   └── validators.py
+# └── assets/
+#     └── icons/
+
+# =================
+# main.py
+# =================
+
+import customtkinter as ctk
+from views.main_window import MainWindow
+
+def main():
+    ctk.set_appearance_mode("light")
+    ctk.set_default_color_theme("blue")
+    
+    app = MainWindow()
+    app.mainloop()
+
+if __name__ == "__main__":
+    main()
+
+# =================
+# database/__init__.py
+# =================
+
+# Empty file to make database a package
+
+# =================
+# database/connection.py
+# =================
+
+import sqlite3
+from datetime import datetime
+import os
+
+class DatabaseManager:
+    def __init__(self, db_path="university_management.db"):
+        self.db_path = db_path
+        self.init_database()
+    
+    def get_connection(self):
+        return sqlite3.connect(self.db_path)
+    
+    def init_database(self):
+        """Initialize the database with the required schema"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        # Create tables
+        cursor.executescript('''
+            -- Enable foreign key constraints
+            PRAGMA foreign_keys = ON;
+            
+            CREATE TABLE IF NOT EXISTS proyectos_curriculares (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL
+            );
+            
+            CREATE TABLE IF NOT EXISTS salas (
+                codigo INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL
+            );
+            
+            CREATE TABLE IF NOT EXISTS sedes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL
+            );
+            
+            CREATE TABLE IF NOT EXISTS personal_laboratorio (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                cargo INTEGER NOT NULL CHECK (cargo IN (0, 1))
+            );
+            
+            CREATE TABLE IF NOT EXISTS estudiantes (
+                codigo INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                cedula INTEGER NOT NULL UNIQUE,
+                proyecto_curricular_id INTEGER REFERENCES proyectos_curriculares(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS profesores (
+                cedula INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                proyecto_curricular_id INTEGER REFERENCES proyectos_curriculares(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS inventario (
+                codigo TEXT PRIMARY KEY,
+                marca_serie TEXT,
+                documento_funcionario INTEGER,
+                nombre_funcionario TEXT,
+                descripcion TEXT,
+                contenido TEXT,
+                estado TEXT NOT NULL CHECK (estado IN ('DISPONIBLE', 'DAÑADO', 'EN USO')),
+                sede_id INTEGER REFERENCES sedes(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS equipos (
+                codigo TEXT PRIMARY KEY,
+                sala_id INTEGER REFERENCES salas(codigo),
+                numero_equipo INTEGER,
+                descripcion TEXT,
+                estado INTEGER NOT NULL CHECK (estado IN (0, 1)),
+                observaciones TEXT
+            );
+            
+            CREATE TABLE IF NOT EXISTS prestamos_salas_profesores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha_entrada TIMESTAMP NOT NULL,
+                laboratorista INTEGER REFERENCES personal_laboratorio(id),
+                monitor INTEGER REFERENCES personal_laboratorio(id),
+                sala_id INTEGER REFERENCES salas(codigo) NOT NULL,
+                profesor_id INTEGER REFERENCES profesores(cedula) NOT NULL,
+                hora_salida TIME,
+                firma_profesor INTEGER,
+                observaciones TEXT
+            );
+            
+            CREATE TABLE IF NOT EXISTS prestamos_salas_estudiantes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha_entrada TIMESTAMP NOT NULL,
+                laboratorista INTEGER REFERENCES personal_laboratorio(id),
+                monitor INTEGER REFERENCES personal_laboratorio(id),
+                sala_id INTEGER REFERENCES salas(codigo) NOT NULL,
+                estudiante_id INTEGER REFERENCES estudiantes(codigo) NOT NULL,
+                hora_salida TIME,
+                numero_equipo INTEGER,
+                firma_estudiante INTEGER,
+                novedad TEXT
+            );
+            
+            CREATE TABLE IF NOT EXISTS prestamos_equipos_profesores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha_entrega TIMESTAMP NOT NULL,
+                fecha_devolucion TIMESTAMP,
+                laboratorista_entrega INTEGER REFERENCES personal_laboratorio(id),
+                monitor_entrega INTEGER REFERENCES personal_laboratorio(id),
+                equipo_codigo TEXT REFERENCES inventario(codigo) NOT NULL,
+                profesor_id INTEGER REFERENCES profesores(cedula) NOT NULL,
+                sala_id INTEGER REFERENCES salas(codigo),
+                titulo_practica TEXT,
+                estado INTEGER NOT NULL CHECK (estado IN (0, 1)),
+                laboratorista_devolucion INTEGER REFERENCES personal_laboratorio(id),
+                monitor_devolucion INTEGER REFERENCES personal_laboratorio(id),
+                documento_devolvente INTEGER,
+                observaciones TEXT
+            );
+            
+            CREATE TABLE IF NOT EXISTS prestamos_equipos_estudiantes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha_entrega TIMESTAMP NOT NULL,
+                fecha_devolucion TIMESTAMP,
+                equipo_codigo TEXT REFERENCES inventario(codigo),
+                laboratorista_entrega INTEGER REFERENCES personal_laboratorio(id),
+                monitor_entrega INTEGER REFERENCES personal_laboratorio(id),
+                estudiante_id INTEGER REFERENCES estudiantes(codigo) NOT NULL,
+                numero_estudiantes INTEGER,
+                sala_id INTEGER REFERENCES salas(codigo) NOT NULL,
+                titulo_practica TEXT,
+                estado INTEGER NOT NULL CHECK (estado IN (0, 1)),
+                laboratorista_devolucion INTEGER REFERENCES personal_laboratorio(id),
+                monitor_devolucion INTEGER REFERENCES personal_laboratorio(id),
+                documento_devolvente INTEGER,
+                observaciones TEXT
+            );
+        ''')
+        
+        # Create triggers
+        cursor.executescript('''
+            -- Trigger for equipment loan to professors
+            CREATE TRIGGER IF NOT EXISTS trg_prestamo_equipo_profesor
+                AFTER INSERT ON prestamos_equipos_profesores
+                FOR EACH ROW
+            BEGIN
+                UPDATE inventario 
+                SET estado = 'EN USO'
+                WHERE codigo = NEW.equipo_codigo;
+            END;
+            
+            -- Trigger for equipment return from professors
+            CREATE TRIGGER IF NOT EXISTS trg_devolucion_equipo_profesor
+                AFTER UPDATE ON prestamos_equipos_profesores
+                FOR EACH ROW
+                WHEN NEW.fecha_devolucion IS NOT NULL AND OLD.fecha_devolucion IS NULL
+            BEGIN
+                UPDATE inventario 
+                SET estado = 'DISPONIBLE'
+                WHERE codigo = NEW.equipo_codigo;
+            END;
+            
+            -- Trigger for equipment loan to students
+            CREATE TRIGGER IF NOT EXISTS trg_prestamo_equipo_estudiante
+                AFTER INSERT ON prestamos_equipos_estudiantes
+                FOR EACH ROW
+            BEGIN
+                UPDATE inventario 
+                SET estado = 'EN USO'
+                WHERE codigo = NEW.equipo_codigo;
+            END;
+            
+            -- Trigger for equipment return from students
+            CREATE TRIGGER IF NOT EXISTS trg_devolucion_equipo_estudiante
+                AFTER UPDATE ON prestamos_equipos_estudiantes
+                FOR EACH ROW
+                WHEN NEW.fecha_devolucion IS NOT NULL AND OLD.fecha_devolucion IS NULL
+            BEGIN
+                UPDATE inventario 
+                SET estado = 'DISPONIBLE'
+                WHERE codigo = NEW.equipo_codigo;
+            END;
+        ''')
+        
+        # Insert some initial data if tables are empty
+        self._insert_initial_data(cursor)
+        
+        conn.commit()
+        conn.close()
+    
+    def _insert_initial_data(self, cursor):
+        """Insert initial data for testing"""
+        # Check if data already exists
+        cursor.execute("SELECT COUNT(*) FROM proyectos_curriculares")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO proyectos_curriculares (nombre) VALUES 
+                ('Ingeniería de Sistemas'),
+                ('Ingeniería Electrónica'),
+                ('Ingeniería Industrial');
+                
+                INSERT INTO sedes (nombre) VALUES 
+                ('Sede Central'),
+                ('Sede Norte');
+                
+                INSERT INTO personal_laboratorio (nombre, cargo) VALUES 
+                ('Juan Pérez', 0),
+                ('María González', 1),
+                ('Carlos López', 0);
+                
+                INSERT INTO salas (codigo, nombre) VALUES 
+                (101, 'Laboratorio de Sistemas 1'),
+                (102, 'Laboratorio de Electrónica'),
+                (103, 'Aula de Cómputo');
+            ''')
+
+# =================
+# database/models.py
+# =================
+
+from database.connection import DatabaseManager
+from datetime import datetime
+
+class StudentModel:
+    def __init__(self):
+        self.db = DatabaseManager()
+    
+    def get_all_students(self, search_term="", project_filter=""):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        
+        query = '''
+            SELECT e.codigo, e.nombre, e.cedula, pc.nombre as proyecto
+            FROM estudiantes e
+            LEFT JOIN proyectos_curriculares pc ON e.proyecto_curricular_id = pc.id
+            WHERE (e.codigo LIKE ? OR e.nombre LIKE ? OR e.cedula LIKE ?)
+        '''
+        params = [f'%{search_term}%', f'%{search_term}%', f'%{search_term}%']
+        
+        if project_filter:
+            query += " AND pc.nombre = ?"
+            params.append(project_filter)
+        
+        cursor.execute(query, params)
+        students = cursor.fetchall()
+        conn.close()
+        return students
+    
+    def add_student(self, codigo, nombre, cedula, proyecto_id):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO estudiantes (codigo, nombre, cedula, proyecto_curricular_id)
+                VALUES (?, ?, ?, ?)
+            ''', (codigo, nombre, cedula, proyecto_id))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            conn.close()
+    
+    def update_student(self, codigo, nombre, cedula, proyecto_id):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                UPDATE estudiantes 
+                SET nombre = ?, cedula = ?, proyecto_curricular_id = ?
+                WHERE codigo = ?
+            ''', (nombre, cedula, proyecto_id, codigo))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            conn.close()
+    
+    def delete_student(self, codigo):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM estudiantes WHERE codigo = ?', (codigo,))
+        conn.commit()
+        conn.close()
+    
+    def get_curriculum_projects(self):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, nombre FROM proyectos_curriculares')
+        projects = cursor.fetchall()
+        conn.close()
+        return projects
+
+class RoomModel:
+    def __init__(self):
+        self.db = DatabaseManager()
+    
+    def get_all_rooms(self):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT s.codigo, s.nombre,
+                   CASE 
+                       WHEN EXISTS (
+                           SELECT 1 FROM prestamos_salas_profesores 
+                           WHERE sala_id = s.codigo AND hora_salida IS NULL
+                       ) OR EXISTS (
+                           SELECT 1 FROM prestamos_salas_estudiantes 
+                           WHERE sala_id = s.codigo AND hora_salida IS NULL
+                       ) THEN 'Ocupada'
+                       ELSE 'Disponible'
+                   END as estado
+            FROM salas s
+        ''')
+        rooms = cursor.fetchall()
+        conn.close()
+        return rooms
+    
+    def add_room(self, codigo, nombre):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('INSERT INTO salas (codigo, nombre) VALUES (?, ?)', (codigo, nombre))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            conn.close()
+    
+    def update_room(self, codigo, nombre):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('UPDATE salas SET nombre = ? WHERE codigo = ?', (nombre, codigo))
+        conn.commit()
+        conn.close()
+
+class InventoryModel:
+    def __init__(self):
+        self.db = DatabaseManager()
+    
+    def get_all_equipment(self, search_term="", status_filter=""):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        
+        query = '''
+            SELECT codigo, marca_serie, nombre_funcionario, 
+                   COALESCE(s.nombre, 'Sin sede') as ubicacion,
+                   descripcion, contenido, estado
+            FROM inventario i
+            LEFT JOIN sedes s ON i.sede_id = s.id
+            WHERE (codigo LIKE ? OR marca_serie LIKE ?)
+        '''
+        params = [f'%{search_term}%', f'%{search_term}%']
+        
+        if status_filter:
+            query += " AND estado = ?"
+            params.append(status_filter)
+        
+        cursor.execute(query, params)
+        equipment = cursor.fetchall()
+        conn.close()
+        return equipment
+    
+    def add_equipment(self, codigo, marca_serie, documento_funcionario, 
+                     nombre_funcionario, descripcion, contenido, estado, sede_id):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO inventario 
+                (codigo, marca_serie, documento_funcionario, nombre_funcionario, 
+                 descripcion, contenido, estado, sede_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (codigo, marca_serie, documento_funcionario, nombre_funcionario,
+                  descripcion, contenido, estado, sede_id))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            conn.close()
+    
+    def get_available_equipment(self):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT codigo, descripcion FROM inventario WHERE estado = "DISPONIBLE"')
+        equipment = cursor.fetchall()
+        conn.close()
+        return equipment
+    
+    def get_sedes(self):
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, nombre FROM sedes')
+        sedes = cursor.fetchall()
+        conn.close()
+        return sedes
+
+# =================
+# views/__init__.py
+# =================
+
+# Empty file to make views a package
+
+# =================
+# views/main_window.py
+# =================
+
+import customtkinter as ctk
+from views.student_management import StudentManagementView
+from views.room_management import RoomManagementView
+from views.equipment_inventory import EquipmentInventoryView
+from views.room_loans import RoomLoansView
+from views.equipment_loans import EquipmentLoansView
+
+class MainWindow(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        
+        # Configure window
+        self.title("Sistema de Gestión Universitaria")
+        self.geometry("1400x800")
+        self.configure(fg_color=("#f0f0f0", "#1a1a1a"))
+        
+        # Configure grid layout
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        
+        self.create_sidebar()
+        self.create_main_content()
+        
+        # Show initial view
+        self.show_student_management()
+    
+    def create_sidebar(self):
+        # Sidebar frame
+        self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0)
+        self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
+        self.sidebar_frame.grid_rowconfigure(8, weight=1)
+        
+        # Logo/Title
+        self.logo_label = ctk.CTkLabel(
+            self.sidebar_frame, 
+            text="Sistema de\nGestión", 
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        
+        # Navigation buttons
+        self.nav_buttons = {}
+        
+        nav_items = [
+            ("Dashboard", self.show_dashboard),
+            ("Estudiantes", self.show_student_management),
+            ("Profesores", self.show_professor_management),
+            ("Salas", self.show_room_management),
+            ("Inventario", self.show_equipment_inventory),
+            ("Préstamos Salas", self.show_room_loans),
+            ("Préstamos Equipos", self.show_equipment_loans)
+        ]
+        
+        for i, (text, command) in enumerate(nav_items, 1):
+            btn = ctk.CTkButton(
+                self.sidebar_frame,
+                text=text,
+                command=command,
+                height=40,
+                font=ctk.CTkFont(size=14)
+            )
+            btn.grid(row=i, column=0, padx=20, pady=5, sticky="ew")
+            self.nav_buttons[text] = btn
+    
+    def create_main_content(self):
+        # Main content frame
+        self.main_frame = ctk.CTkFrame(self, corner_radius=0)
+        self.main_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+        self.main_frame.grid_columnconfigure(0, weight=1)
+        self.main_frame.grid_rowconfigure(0, weight=1)
+    
+    def clear_main_content(self):
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+    
+    def show_dashboard(self):
+        self.clear_main_content()
+        label = ctk.CTkLabel(
+            self.main_frame, 
+            text="Dashboard - En desarrollo",
+            font=ctk.CTkFont(size=24)
+        )
+        label.pack(expand=True)
+    
+    def show_student_management(self):
+        self.clear_main_content()
+        student_view = StudentManagementView(self.main_frame)
+        student_view.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    def show_professor_management(self):
+        self.clear_main_content()
+        label = ctk.CTkLabel(
+            self.main_frame, 
+            text="Gestión de Profesores - En desarrollo",
+            font=ctk.CTkFont(size=24)
+        )
+        label.pack(expand=True)
+    
+    def show_room_management(self):
+        self.clear_main_content()
+        room_view = RoomManagementView(self.main_frame)
+        room_view.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    def show_equipment_inventory(self):
+        self.clear_main_content()
+        inventory_view = EquipmentInventoryView(self.main_frame)
+        inventory_view.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    def show_room_loans(self):
+        self.clear_main_content()
+        room_loans_view = RoomLoansView(self.main_frame)
+        room_loans_view.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    def show_equipment_loans(self):
+        self.clear_main_content()
+        equipment_loans_view = EquipmentLoansView(self.main_frame)
+        equipment_loans_view.pack(fill="both", expand=True, padx=20, pady=20)
+
+# =================
+# views/student_management.py
+# =================
+
+import customtkinter as ctk
+from tkinter import messagebox
+from database.models import StudentModel
+import tkinter as tk
+
+class StudentManagementView(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.student_model = StudentModel()
+        self.setup_ui()
+        self.refresh_students()
+    
+    def setup_ui(self):
+        # Title
+        title = ctk.CTkLabel(self, text="Gestión de Estudiantes", font=ctk.CTkFont(size=24, weight="bold"))
+        title.pack(pady=(0, 20))
+        
+        # Search and filter frame
+        search_frame = ctk.CTkFrame(self)
+        search_frame.pack(fill="x", pady=(0, 20))
+        
+        # Search entry
+        ctk.CTkLabel(search_frame, text="Buscar:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.search_entry = ctk.CTkEntry(search_frame, placeholder_text="Código, nombre o cédula...")
+        self.search_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        self.search_entry.bind("<KeyRelease>", self.on_search)
+        
+        # Project filter
+        ctk.CTkLabel(search_frame, text="Proyecto:").grid(row=0, column=2, padx=10, pady=10, sticky="w")
+        self.project_filter = ctk.CTkComboBox(search_frame, values=["Todos"] + [p[1] for p in self.student_model.get_curriculum_projects()])
+        self.project_filter.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
+        self.project_filter.set("Todos")
+        self.project_filter.configure(command=self.on_filter_change)
+        
+        # Add student button
+        add_btn = ctk.CTkButton(search_frame, text="+ Agregar Estudiante", command=self.add_student_dialog)
+        add_btn.grid(row=0, column=4, padx=10, pady=10)
+        
+        search_frame.grid_columnconfigure(1, weight=1)
+        search_frame.grid_columnconfigure(3, weight=1)
+        
+        # Students table
+        self.create_students_table()
+    
+    def create_students_table(self):
+        # Table frame
+        table_frame = ctk.CTkFrame(self)
+        table_frame.pack(fill="both", expand=True)
+        
+        # Headers
+        headers = ["Código", "Nombre", "Cédula", "Proyecto Curricular", "Acciones"]
+        header_frame = ctk.CTkFrame(table_frame)
+        header_frame.pack(fill="x", padx=10, pady=(10, 0))
+        
+        for i, header in enumerate(headers):
+            label = ctk.CTkLabel(header_frame, text=header, font=ctk.CTkFont(weight="bold"))
+            if i == len(headers) - 1:  # Actions column
+                label.pack(side="right", padx=10, pady=10)
+            else:
+                label.pack(side="left", padx=10, pady=10)
+        
+        # Scrollable frame for students
+        self.students_scroll = ctk.CTkScrollableFrame(table_frame)
+        self.students_scroll.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    def refresh_students(self):
+        # Clear existing students
+        for widget in self.students_scroll.winfo_children():
+            widget.destroy()
+        
+        # Get filter values
+        search_term = self.search_entry.get() if hasattr(self, 'search_entry') else ""
+        project_filter = self.project_filter.get() if hasattr(self, 'project_filter') and self.project_filter.get() != "Todos" else ""
+        
+        # Get students
+        students = self.student_model.get_all_students(search_term, project_filter)
+        
+        for student in students:
+            self.create_student_row(student)
+    
+    def create_student_row(self, student):
+        row_frame = ctk.CTkFrame(self.students_scroll)
+        row_frame.pack(fill="x", pady=2)
+        
+        # Student info
+        info_frame = ctk.CTkFrame(row_frame)
+        info_frame.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+        
+        codigo_label = ctk.CTkLabel(info_frame, text=str(student[0]), width=100)
+        codigo_label.pack(side="left", padx=10, pady=5)
+        
+        nombre_label = ctk.CTkLabel(info_frame, text=student[1], width=200)
+        nombre_label.pack(side="left", padx=10, pady=5)
+        
+        cedula_label = ctk.CTkLabel(info_frame, text=str(student[2]), width=120)
+        cedula_label.pack(side="left", padx=10, pady=5)
+        
+        proyecto_label = ctk.CTkLabel(info_frame, text=student[3] or "Sin proyecto")
+        proyecto_label.pack(side="left", padx=10, pady=5)
+        
+        # Action buttons
+        action_frame = ctk.CTkFrame(row_frame)
+        action_frame.pack(side="right", padx=5, pady=5)
+        
+        edit_btn = ctk.CTkButton(action_frame, text="Editar", width=70, command=lambda s=student: self.edit_student_dialog(s))
+        edit_btn.pack(side="left", padx=2)
+        
+        delete_btn = ctk.CTkButton(action_frame, text="Eliminar", width=70, fg_color="red", command=lambda s=student: self.delete_student(s[0]))
+        delete_btn.pack(side="left", padx=2)
+    
+    def on_search(self, event):
+        self.refresh_students()
+    
+    def on_filter_change(self, value):
+        self.refresh_students()
+    
+    def add_student_dialog(self):
+        dialog = StudentDialog(self, "Agregar Estudiante")
+        if dialog.result:
+            self.student_model.add_student(*dialog.result)
+            self.refresh_students()
+    
+    def edit_student_dialog(self, student):
+        dialog = StudentDialog(self, "Editar Estudiante", student)
+        if dialog.result:
+            self.student_model.update_student(*dialog.result)
+            self.refresh_students()
+    
+    def delete_student(self, codigo):
+        if messagebox.askyesno("Confirmar", f"¿Está seguro de eliminar el estudiante {codigo}?"):
+            self.student_model.delete_student(codigo)
+            self.refresh_students()
+
+class StudentDialog:
+    def __init__(self, parent, title, student_data=None):
+        self.result = None
+        
+        # Create dialog window
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title(title)
+        self.dialog.geometry("400x300")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # Center the dialog
+        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        
+        self.student_model = StudentModel()
+        self.setup_dialog(student_data)
+        
+        # Wait for dialog to close
+        parent.wait_window(self.dialog)
+    
+    def setup_dialog(self, student_data):
+        # Form fields
+        ctk.CTkLabel(self.dialog, text="Código:").pack(pady=5)
+        self.codigo_entry = ctk.CTkEntry(self.dialog)
+        self.codigo_entry.pack(pady=5, padx=20, fill="x")
+        
+        ctk.CTkLabel(self.dialog, text="Nombre:").pack(pady=5)
+        self.nombre_entry = ctk.CTkEntry(self.dialog)
+        self.nombre_entry.pack(pady=5, padx=20, fill="x")
+        
+        ctk.CTkLabel(self.dialog, text="Cédula:").pack(pady=5)
+        self.cedula_entry = ctk.CTkEntry(self.dialog)
+        self.cedula_entry.pack(pady=5, padx=20, fill="x")
+        
+        ctk.CTkLabel(self.dialog, text="Proyecto Curricular:").pack(pady=5)
+        projects = self.student_model.get_curriculum_projects()
+        project_names = [p[1] for p in projects]
+        self.proyecto_combo = ctk.CTkComboBox(self.dialog, values=project_names)
+        self.proyecto_combo.pack(pady=5, padx=20, fill="x")
+        
+        # Fill data if editing
+        if student_data:
+            self.codigo_entry.insert(0, str(student_data[0]))
+            self.nombre_entry.insert(0, student_data[1])
+            self.cedula_entry.insert(0, str(student_data[2]))
+            if student_data[3]:
+                self.proyecto_combo.set(student_data[3])
+        
+        # Buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(pady=20, fill="x", padx=20)
+        
+        save_btn = ctk.CTkButton(button_frame, text="Guardar", command=self.save)
+        save_btn.pack(side="left", padx=5)
+        
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel)
+        cancel_btn.pack(side="right", padx=5)
+    
+    def save(self):
+        # Validate fields
+        if not all([self.codigo_entry.get(), self.nombre_entry.get(), self.cedula_entry.get()]):
+            messagebox.showerror("Error", "Todos los campos son obligatorios")
+            return
+        
+        try:
+            codigo = int(self.codigo_entry.get())
+            cedula = int(self.cedula_entry.get())
+        except ValueError:
+            messagebox.showerror("Error", "Código y cédula deben ser números")
+            return
+        
+        # Get project ID
+        projects = self.student_model.get_curriculum_projects()
+        proyecto_id = None
+        if self.proyecto_combo.get():
+            for p in projects:
+                if p[1] == self.proyecto_combo.get():
+                    proyecto_id = p[0]
+                    break
+        
+        self.result = (codigo, self.nombre_entry.get(), cedula, proyecto_id)
+        self.dialog.destroy()
+    
+    def cancel(self):
+        self.dialog.destroy()
+
+# =================
+# views/room_loans.py
+# =================
+
+import customtkinter as ctk
+from tkinter import messagebox
+from database.models import RoomModel, StudentModel
+from datetime import datetime, date
+import sqlite3
+
+class RoomLoansView(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.setup_ui()
+        self.refresh_loans()
+    
+    def setup_ui(self):
+        # Title
+        title = ctk.CTkLabel(self, text="Préstamos de Salas", font=ctk.CTkFont(size=24, weight="bold"))
+        title.pack(pady=(0, 20))
+        
+        # Control frame
+        control_frame = ctk.CTkFrame(self)
+        control_frame.pack(fill="x", pady=(0, 20))
+        
+        # Date filter
+        ctk.CTkLabel(control_frame, text="Filtrar por fecha:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.date_entry = ctk.CTkEntry(control_frame, placeholder_text="YYYY-MM-DD")
+        self.date_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        self.date_entry.bind("<KeyRelease>", self.on_date_filter)
+        
+        # Add loan button
+        add_btn = ctk.CTkButton(control_frame, text="+ Nuevo Préstamo", command=self.add_loan_dialog)
+        add_btn.grid(row=0, column=2, padx=10, pady=10)
+        
+        control_frame.grid_columnconfigure(1, weight=1)
+        
+        # Loans table
+        self.create_loans_table()
+    
+    def create_loans_table(self):
+        # Table frame
+        table_frame = ctk.CTkFrame(self)
+        table_frame.pack(fill="both", expand=True)
+        
+        # Headers
+        headers = ["ID", "Fecha Entrada", "Sala", "Usuario", "Tipo", "Estado", "Acciones"]
+        header_frame = ctk.CTkFrame(table_frame)
+        header_frame.pack(fill="x", padx=10, pady=(10, 0))
+        
+        for i, header in enumerate(headers):
+            label = ctk.CTkLabel(header_frame, text=header, font=ctk.CTkFont(weight="bold"))
+            if i == len(headers) - 1:  # Actions column
+                label.pack(side="right", padx=10, pady=10)
+            else:
+                label.pack(side="left", padx=10, pady=10)
+        
+        # Scrollable frame for loans
+        self.loans_scroll = ctk.CTkScrollableFrame(table_frame)
+        self.loans_scroll.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    def refresh_loans(self):
+        # Clear existing loans
+        for widget in self.loans_scroll.winfo_children():
+            widget.destroy()
+        
+        # Get loans from database
+        loans = self.get_room_loans()
+        
+        for loan in loans:
+            self.create_loan_row(loan)
+    
+    def get_room_loans(self):
+        from database.connection import DatabaseManager
+        db = DatabaseManager()
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        date_filter = self.date_entry.get() if hasattr(self, 'date_entry') else ""
+        
+        # Get professor loans
+        query_prof = '''
+            SELECT p.id, p.fecha_entrada, s.nombre as sala, pr.nombre as usuario, 
+                   'Profesor' as tipo, p.hora_salida, p.observaciones
+            FROM prestamos_salas_profesores p
+            JOIN salas s ON p.sala_id = s.codigo
+            JOIN profesores pr ON p.profesor_id = pr.cedula
+        '''
+        
+        # Get student loans
+        query_est = '''
+            SELECT p.id, p.fecha_entrada, s.nombre as sala, e.nombre as usuario, 
+                   'Estudiante' as tipo, p.hora_salida, p.novedad
+            FROM prestamos_salas_estudiantes p
+            JOIN salas s ON p.sala_id = s.codigo
+            JOIN estudiantes e ON p.estudiante_id = e.codigo
+        '''
+        
+        if date_filter:
+            query_prof += " WHERE DATE(p.fecha_entrada) = ?"
+            query_est += " WHERE DATE(p.fecha_entrada) = ?"
+            cursor.execute(query_prof, (date_filter,))
+            prof_loans = cursor.fetchall()
+            cursor.execute(query_est, (date_filter,))
+            est_loans = cursor.fetchall()
+        else:
+            cursor.execute(query_prof)
+            prof_loans = cursor.fetchall()
+            cursor.execute(query_est)
+            est_loans = cursor.fetchall()
+        
+        conn.close()
+        
+        # Combine and sort by date
+        all_loans = prof_loans + est_loans
+        all_loans.sort(key=lambda x: x[1], reverse=True)
+        
+        return all_loans
+    
+    def create_loan_row(self, loan):
+        row_frame = ctk.CTkFrame(self.loans_scroll)
+        row_frame.pack(fill="x", pady=2)
+        
+        # Loan info
+        info_frame = ctk.CTkFrame(row_frame)
+        info_frame.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+        
+        id_label = ctk.CTkLabel(info_frame, text=str(loan[0]), width=50)
+        id_label.pack(side="left", padx=5, pady=5)
+        
+        fecha_label = ctk.CTkLabel(info_frame, text=loan[1][:16], width=120)  # Show date and time
+        fecha_label.pack(side="left", padx=5, pady=5)
+        
+        sala_label = ctk.CTkLabel(info_frame, text=loan[2], width=150)
+        sala_label.pack(side="left", padx=5, pady=5)
+        
+        usuario_label = ctk.CTkLabel(info_frame, text=loan[3], width=150)
+        usuario_label.pack(side="left", padx=5, pady=5)
+        
+        tipo_label = ctk.CTkLabel(info_frame, text=loan[4], width=80)
+        tipo_label.pack(side="left", padx=5, pady=5)
+        
+        # Status
+        estado = "Finalizado" if loan[5] else "Activo"
+        estado_color = "gray" if loan[5] else "green"
+        estado_label = ctk.CTkLabel(info_frame, text=estado, text_color=estado_color, width=80)
+        estado_label.pack(side="left", padx=5, pady=5)
+        
+        # Action buttons
+        action_frame = ctk.CTkFrame(row_frame)
+        action_frame.pack(side="right", padx=5, pady=5)
+        
+        if not loan[5]:  # If not finished
+            finish_btn = ctk.CTkButton(action_frame, text="Finalizar", width=70, 
+                                     command=lambda l=loan: self.finish_loan(l))
+            finish_btn.pack(side="left", padx=2)
+        
+        edit_btn = ctk.CTkButton(action_frame, text="Editar", width=60, 
+                               command=lambda l=loan: self.edit_loan_dialog(l))
+        edit_btn.pack(side="left", padx=2)
+    
+    def on_date_filter(self, event):
+        self.refresh_loans()
+    
+    def add_loan_dialog(self):
+
+# =================
+# views/room_management.py
+# =================
+
+import customtkinter as ctk
+from tkinter import messagebox
+from database.models import RoomModel
+
+class RoomManagementView(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.room_model = RoomModel()
+        self.setup_ui()
+        self.refresh_rooms()
+    
+    def setup_ui(self):
+        # Title
+        title = ctk.CTkLabel(self, text="Gestión de Salas", font=ctk.CTkFont(size=24, weight="bold"))
+        title.pack(pady=(0, 20))
+        
+        # Add room button
+        add_frame = ctk.CTkFrame(self)
+        add_frame.pack(fill="x", pady=(0, 20))
+        
+        add_btn = ctk.CTkButton(add_frame, text="+ Agregar Sala", command=self.add_room_dialog)
+        add_btn.pack(side="right", padx=10, pady=10)
+        
+        # Rooms table
+        self.create_rooms_table()
+    
+    def create_rooms_table(self):
+        # Table frame
+        table_frame = ctk.CTkFrame(self)
+        table_frame.pack(fill="both", expand=True)
+        
+        # Headers
+        headers = ["Código", "Nombre", "Estado", "Acciones"]
+        header_frame = ctk.CTkFrame(table_frame)
+        header_frame.pack(fill="x", padx=10, pady=(10, 0))
+        
+        for i, header in enumerate(headers):
+            label = ctk.CTkLabel(header_frame, text=header, font=ctk.CTkFont(weight="bold"))
+            if i == len(headers) - 1:  # Actions column
+                label.pack(side="right", padx=10, pady=10)
+            else:
+                label.pack(side="left", padx=10, pady=10)
+        
+        # Scrollable frame for rooms
+        self.rooms_scroll = ctk.CTkScrollableFrame(table_frame)
+        self.rooms_scroll.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    def refresh_rooms(self):
+        # Clear existing rooms
+        for widget in self.rooms_scroll.winfo_children():
+            widget.destroy()
+        
+        # Get rooms
+        rooms = self.room_model.get_all_rooms()
+        
+        for room in rooms:
+            self.create_room_row(room)
+    
+    def create_room_row(self, room):
+        row_frame = ctk.CTkFrame(self.rooms_scroll)
+        row_frame.pack(fill="x", pady=2)
+        
+        # Room info
+        info_frame = ctk.CTkFrame(row_frame)
+        info_frame.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+        
+        codigo_label = ctk.CTkLabel(info_frame, text=str(room[0]), width=100)
+        codigo_label.pack(side="left", padx=10, pady=5)
+        
+        nombre_label = ctk.CTkLabel(info_frame, text=room[1], width=300)
+        nombre_label.pack(side="left", padx=10, pady=5)
+        
+        # Status with color
+        status_color = "green" if room[2] == "Disponible" else "red"
+        estado_label = ctk.CTkLabel(info_frame, text=room[2], text_color=status_color, width=100)
+        estado_label.pack(side="left", padx=10, pady=5)
+        
+        # Action buttons
+        action_frame = ctk.CTkFrame(row_frame)
+        action_frame.pack(side="right", padx=5, pady=5)
+        
+        edit_btn = ctk.CTkButton(action_frame, text="Editar", width=70, command=lambda r=room: self.edit_room_dialog(r))
+        edit_btn.pack(side="left", padx=2)
+    
+    def add_room_dialog(self):
+        dialog = RoomDialog(self, "Agregar Sala")
+        if dialog.result:
+            if self.room_model.add_room(*dialog.result):
+                self.refresh_rooms()
+            else:
+                messagebox.showerror("Error", "No se pudo agregar la sala. Verifique que el código no esté duplicado.")
+    
+    def edit_room_dialog(self, room):
+        dialog = RoomDialog(self, "Editar Sala", room)
+        if dialog.result:
+            self.room_model.update_room(*dialog.result)
+            self.refresh_rooms()
+
+class RoomDialog:
+    def __init__(self, parent, title, room_data=None):
+        self.result = None
+        
+        # Create dialog window
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title(title)
+        self.dialog.geometry("350x200")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # Center the dialog
+        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        
+        self.setup_dialog(room_data)
+        
+        # Wait for dialog to close
+        parent.wait_window(self.dialog)
+    
+    def setup_dialog(self, room_data):
+        # Form fields
+        ctk.CTkLabel(self.dialog, text="Código:").pack(pady=5)
+        self.codigo_entry = ctk.CTkEntry(self.dialog)
+        self.codigo_entry.pack(pady=5, padx=20, fill="x")
+        
+        ctk.CTkLabel(self.dialog, text="Nombre:").pack(pady=5)
+        self.nombre_entry = ctk.CTkEntry(self.dialog)
+        self.nombre_entry.pack(pady=5, padx=20, fill="x")
+        
+        # Fill data if editing
+        if room_data:
+            self.codigo_entry.insert(0, str(room_data[0]))
+            self.nombre_entry.insert(0, room_data[1])
+            self.codigo_entry.configure(state="disabled")  # Don't allow code editing
+        
+        # Buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(pady=20, fill="x", padx=20)
+        
+        save_btn = ctk.CTkButton(button_frame, text="Guardar", command=self.save)
+        save_btn.pack(side="left", padx=5)
+        
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel)
+        cancel_btn.pack(side="right", padx=5)
+    
+    def save(self):
+        # Validate fields
+        if not all([self.codigo_entry.get(), self.nombre_entry.get()]):
+            messagebox.showerror("Error", "Todos los campos son obligatorios")
+            return
+        
+        try:
+            codigo = int(self.codigo_entry.get())
+        except ValueError:
+            messagebox.showerror("Error", "El código debe ser un número")
+            return
+        
+        self.result = (codigo, self.nombre_entry.get())
+        self.dialog.destroy()
+    
+    def cancel(self):
+        self.dialog.destroy()
+
+# =================
+# views/equipment_inventory.py
+# =================
+
+import customtkinter as ctk
+from tkinter import messagebox
+from database.models import InventoryModel
+
+class EquipmentInventoryView(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.inventory_model = InventoryModel()
+        self.setup_ui()
+        self.refresh_equipment()
+    
+    def setup_ui(self):
+        # Title
+        title = ctk.CTkLabel(self, text="Inventario de Equipos", font=ctk.CTkFont(size=24, weight="bold"))
+        title.pack(pady=(0, 20))
+        
+        # Search and filter frame
+        search_frame = ctk.CTkFrame(self)
+        search_frame.pack(fill="x", pady=(0, 20))
+        
+        # Search entry
+        ctk.CTkLabel(search_frame, text="Buscar:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.search_entry = ctk.CTkEntry(search_frame, placeholder_text="Código o marca/serie...")
+        self.search_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        self.search_entry.bind("<KeyRelease>", self.on_search)
+        
+        # Status filter
+        ctk.CTkLabel(search_frame, text="Estado:").grid(row=0, column=2, padx=10, pady=10, sticky="w")
+        self.status_filter = ctk.CTkComboBox(search_frame, values=["Todos", "DISPONIBLE", "EN USO", "DAÑADO"])
+        self.status_filter.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
+        self.status_filter.set("Todos")
+        self.status_filter.configure(command=self.on_filter_change)
+        
+        # Add equipment button
+        add_btn = ctk.CTkButton(search_frame, text="+ Agregar Equipo", command=self.add_equipment_dialog)
+        add_btn.grid(row=0, column=4, padx=10, pady=10)
+        
+        search_frame.grid_columnconfigure(1, weight=1)
+        search_frame.grid_columnconfigure(3, weight=1)
+        
+        # Equipment table
+        self.create_equipment_table()
+    
+    def create_equipment_table(self):
+        # Table frame
+        table_frame = ctk.CTkFrame(self)
+        table_frame.pack(fill="both", expand=True)
+        
+        # Headers
+        headers = ["Código", "Marca/Serie", "Responsable", "Ubicación", "Descripción", "Estado", "Acciones"]
+        header_frame = ctk.CTkFrame(table_frame)
+        header_frame.pack(fill="x", padx=10, pady=(10, 0))
+        
+        for i, header in enumerate(headers):
+            label = ctk.CTkLabel(header_frame, text=header, font=ctk.CTkFont(weight="bold"))
+            if i == len(headers) - 1:  # Actions column
+                label.pack(side="right", padx=5, pady=10)
+            else:
+                label.pack(side="left", padx=5, pady=10, fill="x", expand=True)
+        
+        # Scrollable frame for equipment
+        self.equipment_scroll = ctk.CTkScrollableFrame(table_frame)
+        self.equipment_scroll.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    def refresh_equipment(self):
+        # Clear existing equipment
+        for widget in self.equipment_scroll.winfo_children():
+            widget.destroy()
+        
+        # Get filter values
+        search_term = self.search_entry.get() if hasattr(self, 'search_entry') else ""
+        status_filter = self.status_filter.get() if hasattr(self, 'status_filter') and self.status_filter.get() != "Todos" else ""
+        
+        # Get equipment
+        equipment = self.inventory_model.get_all_equipment(search_term, status_filter)
+        
+        for item in equipment:
+            self.create_equipment_row(item)
+    
+    def create_equipment_row(self, equipment):
+        row_frame = ctk.CTkFrame(self.equipment_scroll)
+        row_frame.pack(fill="x", pady=2)
+        
+        # Equipment info
+        info_frame = ctk.CTkFrame(row_frame)
+        info_frame.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+        
+        # Create labels for each field
+        codigo_label = ctk.CTkLabel(info_frame, text=equipment[0], width=80)
+        codigo_label.pack(side="left", padx=5, pady=5)
+        
+        marca_label = ctk.CTkLabel(info_frame, text=equipment[1] or "N/A", width=120)
+        marca_label.pack(side="left", padx=5, pady=5)
+        
+        responsable_label = ctk.CTkLabel(info_frame, text=equipment[2] or "N/A", width=120)
+        responsable_label.pack(side="left", padx=5, pady=5)
+        
+        ubicacion_label = ctk.CTkLabel(info_frame, text=equipment[3], width=100)
+        ubicacion_label.pack(side="left", padx=5, pady=5)
+        
+        descripcion_label = ctk.CTkLabel(info_frame, text=equipment[4] or "N/A", width=150)
+        descripcion_label.pack(side="left", padx=5, pady=5)
+        
+        # Status with color and icon
+        status_colors = {
+            "DISPONIBLE": "green",
+            "EN USO": "orange", 
+            "DAÑADO": "red"
+        }
+        status_icons = {
+            "DISPONIBLE": "✓",
+            "EN USO": "◐",
+            "DAÑADO": "✗"
+        }
+        
+        status_text = f"{status_icons.get(equipment[6], '')} {equipment[6]}"
+        estado_label = ctk.CTkLabel(info_frame, text=status_text, 
+                                   text_color=status_colors.get(equipment[6], "gray"), width=100)
+        estado_label.pack(side="left", padx=5, pady=5)
+        
+        # Action buttons
+        action_frame = ctk.CTkFrame(row_frame)
+        action_frame.pack(side="right", padx=5, pady=5)
+        
+        edit_btn = ctk.CTkButton(action_frame, text="Editar", width=60, command=lambda e=equipment: self.edit_equipment_dialog(e))
+        edit_btn.pack(side="left", padx=2)
+        
+        delete_btn = ctk.CTkButton(action_frame, text="Eliminar", width=60, fg_color="red", command=lambda e=equipment: self.delete_equipment(e[0]))
+        delete_btn.pack(side="left", padx=2)
+    
+    def on_search(self, event):
+        self.refresh_equipment()
+    
+    def on_filter_change(self, value):
+        self.refresh_equipment()
+    
+    def add_equipment_dialog(self):
+        dialog = EquipmentDialog(self, "Agregar Equipo")
+        if dialog.result:
+            if self.inventory_model.add_equipment(*dialog.result):
+                self.refresh_equipment()
+            else:
+                messagebox.showerror("Error", "No se pudo agregar el equipo. Verifique que el código no esté duplicado.")
+    
+    def edit_equipment_dialog(self, equipment):
+        dialog = EquipmentDialog(self, "Editar Equipo", equipment)
+        if dialog.result:
+            # Implementation would go here for update method
+            self.refresh_equipment()
+    
+    def delete_equipment(self, codigo):
+        if messagebox.askyesno("Confirmar", f"¿Está seguro de eliminar el equipo {codigo}?"):
+            # Implementation would go here for delete method
+            self.refresh_equipment()
+
+class EquipmentDialog:
+    def __init__(self, parent, title, equipment_data=None):
+        self.result = None
+        
+        # Create dialog window
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title(title)
+        self.dialog.geometry("450x600")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # Center the dialog
+        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        
+        self.inventory_model = InventoryModel()
+        self.setup_dialog(equipment_data)
+        
+        # Wait for dialog to close
+        parent.wait_window(self.dialog)
+    
+    def setup_dialog(self, equipment_data):
+        # Scrollable frame for form
+        scroll_frame = ctk.CTkScrollableFrame(self.dialog)
+        scroll_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Form fields
+        ctk.CTkLabel(scroll_frame, text="Código:").pack(pady=5)
+        self.codigo_entry = ctk.CTkEntry(scroll_frame)
+        self.codigo_entry.pack(pady=5, fill="x")
+        
+        ctk.CTkLabel(scroll_frame, text="Marca/Serie:").pack(pady=5)
+        self.marca_entry = ctk.CTkEntry(scroll_frame)
+        self.marca_entry.pack(pady=5, fill="x")
+        
+        ctk.CTkLabel(scroll_frame, text="Documento Funcionario:").pack(pady=5)
+        self.documento_entry = ctk.CTkEntry(scroll_frame)
+        self.documento_entry.pack(pady=5, fill="x")
+        
+        ctk.CTkLabel(scroll_frame, text="Nombre Funcionario:").pack(pady=5)
+        self.nombre_funcionario_entry = ctk.CTkEntry(scroll_frame)
+        self.nombre_funcionario_entry.pack(pady=5, fill="x")
+        
+        ctk.CTkLabel(scroll_frame, text="Descripción:").pack(pady=5)
+        self.descripcion_entry = ctk.CTkTextbox(scroll_frame, height=60)
+        self.descripcion_entry.pack(pady=5, fill="x")
+        
+        ctk.CTkLabel(scroll_frame, text="Contenido:").pack(pady=5)
+        self.contenido_entry = ctk.CTkTextbox(scroll_frame, height=60)
+        self.contenido_entry.pack(pady=5, fill="x")
+        
+        ctk.CTkLabel(scroll_frame, text="Estado:").pack(pady=5)
+        self.estado_combo = ctk.CTkComboBox(scroll_frame, values=["DISPONIBLE", "EN USO", "DAÑADO"])
+        self.estado_combo.pack(pady=5, fill="x")
+        
+        ctk.CTkLabel(scroll_frame, text="Sede:").pack(pady=5)
+        sedes = self.inventory_model.get_sedes()
+        sede_names = [f"{s[1]}" for s in sedes]
+        self.sede_combo = ctk.CTkComboBox(scroll_frame, values=sede_names)
+        self.sede_combo.pack(pady=5, fill="x")
+        
+        # Fill data if editing
+        if equipment_data:
+            self.codigo_entry.insert(0, equipment_data[0])
+            self.marca_entry.insert(0, equipment_data[1] or "")
+            self.nombre_funcionario_entry.insert(0, equipment_data[2] or "")
+            self.descripcion_entry.insert("1.0", equipment_data[4] or "")
+            self.contenido_entry.insert("1.0", equipment_data[5] or "")
+            self.estado_combo.set(equipment_data[6])
+            self.codigo_entry.configure(state="disabled")  # Don't allow code editing
+        
+        # Buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(pady=10, fill="x", padx=20)
+        
+        save_btn = ctk.CTkButton(button_frame, text="Guardar", command=self.save)
+        save_btn.pack(side="left", padx=5)
+        
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel)
+        cancel_btn.pack(side="right", padx=5)
+    
+    def save(self):
+        # Validate required fields
+        if not all([self.codigo_entry.get(), self.estado_combo.get()]):
+            messagebox.showerror("Error", "Código y estado son obligatorios")
+            return
+        
+        # Get sede ID
+        sedes = self.inventory_model.get_sedes()
+        sede_id = None
+        if self.sede_combo.get():
+            for s in sedes:
+                if s[1] == self.sede_combo.get():
+                    sede_id = s[0]
+                    break
+        
+        documento = None
+        if self.documento_entry.get():
+            try:
+                documento = int(self.documento_entry.get())
+            except ValueError:
+                messagebox.showerror("Error", "El documento debe ser un número")
+                return
+        
+        self.result = (
+            self.codigo_entry.get(),
+            self.marca_entry.get() or None,
+            documento,
+            self.nombre_funcionario_entry.get() or None,
+            self.descripcion_entry.get("1.0", "end-1c") or None,
+            self.contenido_entry.get("1.0", "end-1c") or None,
+            self.estado_combo.get(),
+            sede_id
+        )
+        self.dialog.destroy()
+    
+    def cancel(self):
+        self.dialog.destroy()
+        

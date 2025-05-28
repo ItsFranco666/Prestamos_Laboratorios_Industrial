@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from tkinter import ttk
-from models.room_model import RoomModel
+# from models.room_model import RoomModel
 
 class RoomManagementView(ctk.CTkFrame):
     def __init__(self, parent):
