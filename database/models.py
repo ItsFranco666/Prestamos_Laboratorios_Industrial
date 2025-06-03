@@ -1,3 +1,4 @@
+import sqlite3
 from database.connection import DatabaseManager
 from datetime import datetime
 

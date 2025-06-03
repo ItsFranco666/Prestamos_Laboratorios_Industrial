@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from database.models import StudentModel
+from utils.font_config import get_font
 
 class StudentManagementView(ctk.CTkFrame):
     def __init__(self, parent):
@@ -12,8 +13,8 @@ class StudentManagementView(ctk.CTkFrame):
     
     def setup_ui(self):
         # Title
-        title = ctk.CTkLabel(self, text="Gestión de Estudiantes", font=ctk.CTkFont(size=24, weight="bold"))
-        title.pack(pady=(0, 20))
+        title = ctk.CTkLabel(self, text="Gestión de Estudiantes", font=get_font("title", "bold"))
+        title.pack(pady=(10, 30))
         
         # Search and filter frame
         search_frame = ctk.CTkFrame(self)
