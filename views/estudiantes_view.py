@@ -51,127 +51,191 @@ class StudentManagementView(ctk.CTkFrame):
         self.create_students_treeview_table()
     
     def create_students_treeview_table(self):
-        table_container_frame = ctk.CTkFrame(self)
-        table_container_frame.pack(fill="both", expand=True, pady=(0,10), padx=0)
+        # Container frame principal con bordes redondeados y sombra
+        table_main_container = ctk.CTkFrame(self, corner_radius=15, 
+                                          border_width=1,
+                                          border_color=("gray80", "gray20"))
+        table_main_container.pack(fill="both", expand=True, pady=(0,10), padx=0)
 
+        # Configurar estilo del Treeview para apariencia moderna
         style = ttk.Style()
-        style.theme_use("default") # Base theme
+        style.theme_use("default")
 
-        # Configure Treeview colors for dark/light mode (basic example)
-        # These might need more fine-tuning based on the CustomTkinter theme
-        # For a more integrated look, you might need to explore how CustomTkinter themes ttk widgets
-        # or consider alternatives if perfect styling is crucial and hard with ttk.
+        # Altura de fila más generosa
+        new_row_height = 35
+
         current_mode = ctk.get_appearance_mode()
         if current_mode == "Dark":
-            style.configure("Treeview", 
-                            background="#2e2e2e", 
-                            foreground="white", 
-                            fieldbackground="#2e2e2e", 
-                            borderwidth=0,
-                            rowheight=25) # Altura de fila
-            style.map('Treeview', background=[('selected', '#555555')])
-            style.configure("Treeview.Heading", 
-                            background="#565b5e", 
-                            foreground="white", 
-                            font=get_font("normal", "bold"), # Usar font_config
-                            borderwidth=0, relief="flat")
-            style.map("Treeview.Heading", background=[('active', '#3c3c3c')])
-        else: # Light mode
-            style.configure("Treeview", 
-                            background="#ebebeb", 
-                            foreground="black", 
-                            fieldbackground="#ebebeb", 
-                            borderwidth=0,
-                            rowheight=25)
-            style.map('Treeview', background=[('selected', '#c0c0c0')])
-            style.configure("Treeview.Heading", 
-                            background="#d6d6d6", 
-                            foreground="black", 
-                            font=get_font("normal", "bold"),
-                            borderwidth=0, relief="flat")
-            style.map("Treeview.Heading", background=[('active', '#b0b0b0')])
+            tree_bg = "#2b2b2b"
+            text_color = "#ffffff" 
+            selected_color = "#404040"
+            heading_bg = "#4B5563"
+            
+            style.configure("Modern.Treeview", 
+                          background=tree_bg,
+                          foreground=text_color,
+                          fieldbackground=tree_bg,
+                          borderwidth=0,
+                          relief="flat",
+                          rowheight=new_row_height,
+                          font=get_font("normal"))
+            
+            style.map('Modern.Treeview', 
+                     background=[('selected', selected_color)],
+                     foreground=[('selected', text_color)])
+            
+            # Estilo del header moderno
+            style.configure("Modern.Treeview.Heading",
+                          background=heading_bg,
+                          foreground=text_color,
+                          borderwidth=0,
+                          relief="flat",
+                          font=get_font("normal", "bold"),
+                          padding=(10, 8))
+            
+            style.map("Modern.Treeview.Heading", 
+                     background=[('active', "#525E75")])
+        else:
+            tree_bg = "#ffffff"
+            text_color = "#2b2b2b"
+            selected_color = "#e3f2fd"
+            heading_bg = "#E5E7EB"
+            
+            style.configure("Modern.Treeview",
+                          background=tree_bg,
+                          foreground=text_color,
+                          fieldbackground=tree_bg,
+                          borderwidth=0,
+                          relief="flat",
+                          rowheight=new_row_height,
+                          font=get_font("normal"))
+            
+            style.map('Modern.Treeview',
+                     background=[('selected', selected_color)],
+                     foreground=[('selected', text_color)])
+            
+            # Estilo del header moderno
+            style.configure("Modern.Treeview.Heading",
+                          background=heading_bg,
+                          foreground=text_color,
+                          borderwidth=0,
+                          relief="flat",
+                          font=get_font("normal", "bold"),
+                          padding=(10, 8))
+            
+            style.map("Modern.Treeview.Heading", 
+                     background=[('active', "#CFD8DC")])
 
+        # Container para el Treeview con bordes redondeados internos
+        table_container_frame = ctk.CTkFrame(table_main_container, 
+                                           corner_radius=10,
+                                           fg_color=("white", "gray15"))
+        table_container_frame.pack(fill="both", expand=True, padx=8, pady=8)
 
-        self.tree = ttk.Treeview(table_container_frame, 
-                                 columns=("Codigo", "Nombre", "Cedula", "Proyecto", "Acciones"), 
-                                 show="headings", style="Treeview")
-        
-        self.tree.heading("Codigo", text="Código", anchor="w")
-        self.tree.heading("Nombre", text="Nombre", anchor="w")
-        self.tree.heading("Cedula", text="Cédula", anchor="w")
-        self.tree.heading("Proyecto", text="Proyecto Curricular", anchor="w")
-        self.tree.heading("Acciones", text="Acciones", anchor="center")
+        # Crear el Treeview con estilo moderno (SIN columna de acciones)
+        self.tree = ttk.Treeview(table_container_frame,
+                               columns=("Codigo", "Nombre", "Cedula", "Proyecto"),
+                               show="tree headings",
+                               style="Modern.Treeview")
 
-        self.tree.column("Codigo", width=100, minwidth=80, stretch=False, anchor="w")
-        self.tree.column("Nombre", width=250, minwidth=150, stretch=True, anchor="w")
-        self.tree.column("Cedula", width=120, minwidth=100, stretch=False, anchor="w")
-        self.tree.column("Proyecto", width=250, minwidth=150, stretch=True, anchor="w")
-        self.tree.column("Acciones", width=150, minwidth=120, stretch=False, anchor="center")
-        
-        self.tree.pack(side="left", fill="both", expand=True, padx=0, pady=0)
+        # Configurar headers con texto visible y estilos modernos
+        self.tree.heading("Codigo", text="📋 Código", anchor="w")
+        self.tree.heading("Nombre", text="👤 Nombre", anchor="w")
+        self.tree.heading("Cedula", text="🆔 Cédula", anchor="w")
+        self.tree.heading("Proyecto", text="📚 Proyecto Curricular", anchor="w")
 
-        scrollbar = ctk.CTkScrollbar(table_container_frame, command=self.tree.yview)
-        scrollbar.pack(side="right", fill="y")
+        # Configurar columnas - sin columna de acciones
+        self.tree.column("#0", width=0, stretch=False)  # Ocultar columna del tree
+        self.tree.column("Codigo", width=120, minwidth=100, stretch=False, anchor="w")
+        self.tree.column("Nombre", width=300, minwidth=200, stretch=True, anchor="w")
+        self.tree.column("Cedula", width=150, minwidth=120, stretch=False, anchor="w")
+        self.tree.column("Proyecto", width=350, minwidth=200, stretch=True, anchor="w")
+
+        # Pack del Treeview con padding para el efecto de borde redondeado
+        self.tree.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
+        # Scrollbar moderna
+        scrollbar = ctk.CTkScrollbar(table_container_frame, 
+                                   command=self.tree.yview,
+                                   corner_radius=8,
+                                   width=12)
+        scrollbar.pack(side="right", fill="y", pady=5, padx=(0,5))
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        # Bind double click for editing (optional, if you prefer this over buttons in action column)
-        # self.tree.bind("<Double-1>", self.on_tree_double_click)
+
 
     def refresh_students(self):
-        # Clear existing students from Treeview
         for item in self.tree.get_children():
             self.tree.delete(item)
         
         search_term = self.search_entry.get() if hasattr(self, 'search_entry') else ""
         project_filter = self.project_filter.get() if hasattr(self, 'project_filter') and self.project_filter.get() != "Todos" else ""
         
-        students = self.student_model.get_all_students(search_term, project_filter_name=project_filter) # Pass project_filter_name
+        students = self.student_model.get_all_students(search_term, project_filter_name=project_filter) 
         
-        for student_data in students:
-            # student_data: (codigo, nombre, cedula, proyecto_nombre)
-            # For the "Acciones" column, we'll insert the student's code (ID) to fetch for actions,
-            # but display "Editar/Eliminar" or handle buttons differently.
-            # A common way is to have buttons outside the tree or use the double-click.
-            # If buttons are desired *in* the row, it's complex with ttk.Treeview without custom widgets.
-            # For simplicity, we'll rely on a context menu or double-click, or separate action buttons.
-            # Or, one can open a dialog upon selection.
-            # Here, we'll just put text and handle actions via selection.
+        for i, student_data in enumerate(students):
+            # Simplificar la visualización sin iconos excesivos para mejor legibilidad
+            codigo_display = str(student_data[0])
+            nombre_display = student_data[1]
+            cedula_display = str(student_data[2])
+            proyecto_display = student_data[3] or 'Sin proyecto'
             
-            # We need to store the actual student data (or at least the ID) with the tree item
-            # One way is to use the `item` iid for the student code.
-            # The values tuple should match the column order.
-            self.tree.insert("", "end", iid=str(student_data[0]), values=(
-                student_data[0], # Codigo
-                student_data[1], # Nombre
-                student_data[2], # Cedula
-                student_data[3] or "Sin proyecto", # Proyecto
-                "Ver Acciones" # Placeholder for Acciones column
+            item_id = self.tree.insert("", "end", iid=str(student_data[0]), values=(
+                codigo_display,
+                nombre_display, 
+                cedula_display,
+                proyecto_display
             ))
+            
+            # Alternar colores de fila para mejor legibilidad
+            if i % 2 == 1:
+                self.tree.item(item_id, tags=('alternate',))
         
-        # Add a handler for selection to enable/show action buttons, or a context menu
-        self.tree.bind("<<TreeviewSelect>>", self.on_student_select)
+        # Configurar tags para filas alternadas
+        current_mode = ctk.get_appearance_mode()
+        if current_mode == "Dark":
+            self.tree.tag_configure('alternate', background='#323232')
+        else:
+            self.tree.tag_configure('alternate', background='#f8f9fa')
         
-        # Frame for action buttons that appear upon selection
-        self.selected_actions_frame = ctk.CTkFrame(self)
-        self.selected_actions_frame.pack(pady=(10,0), padx=0, fill="x")
+        if not hasattr(self, 'selected_actions_frame'): # Create actions frame only once
+            self.selected_actions_frame = ctk.CTkFrame(self, corner_radius=12)
+            self.selected_actions_frame.pack(pady=(15,0), padx=0, fill="x")
 
-        self.edit_selected_btn = ctk.CTkButton(self.selected_actions_frame, text="Editar Seleccionado", 
-                                             command=self.edit_selected_student, state="disabled", font=get_font("normal"))
-        self.edit_selected_btn.pack(side="left", padx=5)
+            self.edit_selected_btn = ctk.CTkButton(self.selected_actions_frame, 
+                                                 text="✏️ Editar Seleccionado",
+                                                 command=self.edit_selected_student, 
+                                                 state="disabled", 
+                                                 font=get_font("normal"),
+                                                 corner_radius=8,
+                                                 height=35)
+            self.edit_selected_btn.pack(side="left", padx=8, pady=8)
 
-        self.delete_selected_btn = ctk.CTkButton(self.selected_actions_frame, text="Eliminar Seleccionado", 
-                                               command=self.delete_selected_student, state="disabled", fg_color="red", font=get_font("normal"))
-        self.delete_selected_btn.pack(side="left", padx=5)
-
+            self.delete_selected_btn = ctk.CTkButton(self.selected_actions_frame, 
+                                                   text="🗑️ Eliminar Seleccionado",
+                                                   command=self.delete_selected_student, 
+                                                   state="disabled", 
+                                                   fg_color=("#ef4444", "#dc2626"),
+                                                   hover_color=("#dc2626", "#b91c1c"),
+                                                   font=get_font("normal"),
+                                                   corner_radius=8,
+                                                   height=35)
+            self.delete_selected_btn.pack(side="right", padx=8, pady=8)
+            
+            # Bind selection event after buttons are created
+            self.tree.bind("<<TreeviewSelect>>", self.on_student_select)
+        
+        self.on_student_select() # Ensure buttons are in correct state after refresh
 
     def on_student_select(self, event=None):
-        selected_item_iid = self.tree.focus() # Gets the iid of the focused item
-        if selected_item_iid:
-            self.edit_selected_btn.configure(state="normal")
-            self.delete_selected_btn.configure(state="normal")
-        else:
-            self.edit_selected_btn.configure(state="disabled")
-            self.delete_selected_btn.configure(state="disabled")
+        if hasattr(self, 'edit_selected_btn'): # Check if buttons exist
+            selected_item_iid = self.tree.focus() 
+            if selected_item_iid:
+                self.edit_selected_btn.configure(state="normal")
+                self.delete_selected_btn.configure(state="normal")
+            else:
+                self.edit_selected_btn.configure(state="disabled")
+                self.delete_selected_btn.configure(state="disabled")
 
     def get_selected_student_data(self):
         selected_item_iid = self.tree.focus()
@@ -179,37 +243,23 @@ class StudentManagementView(ctk.CTkFrame):
             messagebox.showwarning("Sin Selección", "Por favor, seleccione un estudiante de la tabla.", parent=self)
             return None
         
-        # The iid is the student code. We need to fetch the full student data again for the dialog.
-        # Or, if the 'values' in the treeview contained all necessary info, we could use that.
-        # Let's assume student_model.get_student_by_code_or_id can fetch by code.
-        # The `get_all_students` returns (codigo, nombre, cedula, proyecto_nombre)
-        # The dialog needs (codigo, nombre, cedula, proyecto_nombre_actual_o_id)
-        # We can reconstruct this or fetch fresh. Fetching fresh is safer.
-        
-        student_code = int(selected_item_iid)
-        # This is a bit inefficient as we're re-fetching.
-        # A better way would be to store the full student tuple in a dictionary keyed by code when loading.
-        # For now, let's use the values from the tree, assuming they are sufficient for the dialog.
-        # values = (codigo, nombre, cedula, proyecto_nombre, "Acciones")
         tree_values = self.tree.item(selected_item_iid, "values")
+        # Los valores ahora están limpios, sin necesidad de remover iconos
+        codigo = int(tree_values[0])
+        nombre = tree_values[1]
+        cedula = int(tree_values[2])
+        proyecto = tree_values[3]
         
-        # The dialog expects: (codigo, nombre, cedula, proyecto_nombre_para_mostrar_en_combobox)
-        # The StudentModel.update_student expects: (original_codigo, nombre, cedula, proyecto_id, new_codigo=None)
-        # We need to map proyecto_nombre back to proyecto_id for saving.
-        
-        return (int(tree_values[0]), tree_values[1], int(tree_values[2]), tree_values[3]) # codigo, nombre, cedula, proyecto_nombre
-
+        return (codigo, nombre, cedula, proyecto)
 
     def edit_selected_student(self):
-        student_display_data = self.get_selected_student_data() # (codigo, nombre, cedula, proyecto_nombre)
+        student_display_data = self.get_selected_student_data()
         if student_display_data:
-            # Pass this data to the dialog. The dialog will handle fetching project_id if needed for saving.
             dialog = StudentDialog(self, "Editar Estudiante", student_data_for_dialog=student_display_data, student_model=self.student_model)
-            if dialog.result: # Dialog.result should be (codigo_original, nombre, cedula, proyecto_id, nuevo_codigo_si_cambio)
+            if dialog.result: 
                 original_codigo, nombre, cedula, proyecto_id, new_codigo = dialog.result
                 self.student_model.update_student(original_codigo, nombre, cedula, proyecto_id, new_codigo=new_codigo)
                 self.refresh_students()
-                self.on_student_select() # Update button states
 
     def delete_selected_student(self):
         student_display_data = self.get_selected_student_data()
@@ -219,19 +269,16 @@ class StudentManagementView(ctk.CTkFrame):
             if messagebox.askyesno("Confirmar Eliminación", f"¿Está seguro de eliminar al estudiante {nombre_to_delete} (Cód: {codigo_to_delete})?", parent=self):
                 self.student_model.delete_student(codigo_to_delete)
                 self.refresh_students()
-                self.on_student_select() # Update button states
     
-    def on_search(self, event=None): # Added event=None for direct calls
+    def on_search(self, event=None): 
         self.refresh_students()
     
-    def on_filter_change(self, value=None): # Added value=None for direct calls
+    def on_filter_change(self, value=None): 
         self.refresh_students()
     
     def add_student_dialog(self):
-        # Pass student_model to dialog so it can fetch projects for its combobox
         dialog = StudentDialog(self, "Agregar Estudiante", student_model=self.student_model)
         if dialog.result:
-            # Dialog.result for add should be (codigo, nombre, cedula, proyecto_id)
             codigo, nombre, cedula, proyecto_id = dialog.result
             self.student_model.add_student(codigo, nombre, cedula, proyecto_id)
             self.refresh_students()
@@ -240,18 +287,15 @@ class StudentDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, student_data_for_dialog=None, student_model=None):
         super().__init__(parent)
         self.title(title)
-        self.geometry("450x400") # Adjusted size
+        self.geometry("450x400") 
         self.transient(parent)
         self.grab_set()
-        self.lift() # Ensure it's on top
+        self.lift() 
 
         self.result = None
-        self.student_model = student_model # Passed from parent view
+        self.student_model = student_model 
         self.editing = student_data_for_dialog is not None
         self.original_student_code = student_data_for_dialog[0] if self.editing else None
-
-        # Center the dialog
-        # self.after(10, self._center_dialog) # Delay centering slightly
 
         main_frame = ctk.CTkFrame(self, fg_color="transparent")
         main_frame.pack(expand=True, fill="both", padx=20, pady=20)
@@ -269,11 +313,11 @@ class StudentDialog(ctk.CTkToplevel):
         self.cedula_entry.grid(row=2, column=1, padx=5, pady=8, sticky="ew")
         
         ctk.CTkLabel(main_frame, text="Proyecto Curricular:", font=get_font("normal")).grid(row=3, column=0, padx=5, pady=8, sticky="w")
-        self.projects_data = self.student_model.get_curriculum_projects() # List of (id, nombre)
+        self.projects_data = self.student_model.get_curriculum_projects() 
         project_names = ["Seleccione un proyecto..."] + [p[1] for p in self.projects_data]
         self.proyecto_combo = ctk.CTkComboBox(main_frame, values=project_names, font=get_font("normal"), state="readonly")
         self.proyecto_combo.grid(row=3, column=1, padx=5, pady=8, sticky="ew")
-        self.proyecto_combo.set(project_names[0]) # Default to "Seleccione..."
+        self.proyecto_combo.set(project_names[0]) 
 
         main_frame.grid_columnconfigure(1, weight=1)
 
@@ -281,7 +325,6 @@ class StudentDialog(ctk.CTkToplevel):
             self.codigo_entry.insert(0, str(student_data_for_dialog[0]))
             self.nombre_entry.insert(0, student_data_for_dialog[1])
             self.cedula_entry.insert(0, str(student_data_for_dialog[2]))
-            # student_data_for_dialog[3] is proyecto_nombre
             if student_data_for_dialog[3] and student_data_for_dialog[3] != "Sin proyecto":
                 self.proyecto_combo.set(student_data_for_dialog[3])
             else:
@@ -297,9 +340,9 @@ class StudentDialog(ctk.CTkToplevel):
         cancel_btn.pack(side="right", expand=True, padx=5)
 
         self.codigo_entry.focus_set()
-        self.wait_window(self) # Crucial for modal behavior and getting result
+        self.wait_window(self) 
 
-    def _center_dialog(self):
+    def _center_dialog(self): # This method might not be strictly necessary if parent centering works well
         self.update_idletasks()
         parent_x = self.master.winfo_rootx()
         parent_y = self.master.winfo_rooty()
@@ -348,4 +391,3 @@ class StudentDialog(ctk.CTkToplevel):
     def cancel(self):
         self.result = None
         self.destroy()
-
