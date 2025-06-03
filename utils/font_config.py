@@ -1,23 +1,39 @@
+# In university_management/utils/font_config.py
 import customtkinter as ctk
 
-# Configuración global de fuentes
-FONT_FAMILY = "Roboto"  # Puedes cambiar esto por la fuente que prefieras
-FONT_SIZES = {
-    "title": 30,
-    "subtitle": 18,
-    "normal": 14,
-    "small": 12
-}
+def get_font(size_category="normal", weight="normal"):
+    """
+    Retorna un objeto de CTkFont dependiendo del tipo de texto
+    """
+    size = 12  # Default normal size
+    if size_category == "title":
+        size = 24
+    elif size_category == "subtitle":
+        size = 18
+    elif size_category == "large":
+        size = 16
+    elif size_category == "small":
+        size = 10
 
-def get_font(size="normal", weight="normal"):
-    """
-    Obtiene una configuración de fuente predefinida
-    :param size: Tamaño de la fuente ("title", "subtitle", "normal", "small")
-    :param weight: Peso de la fuente ("normal", "bold")
-    :return: Objeto CTkFont configurado
-    """
-    return ctk.CTkFont(
-        family=FONT_FAMILY,
-        size=FONT_SIZES.get(size, FONT_SIZES["normal"]),
-        weight=weight
-    ) 
+    return ctk.CTkFont(family="Roboto", size=size, weight=weight)
+
+# Example usage (optional, for testing):
+if __name__ == '__main__':
+    # This part will only run if you execute font_config.py directly
+    # It's not needed for the main application
+    root = ctk.CTk()
+    root.geometry("300x200")
+
+    label_title = ctk.CTkLabel(root, text="Title Font", font=get_font("title", "bold"))
+    label_title.pack(pady=5)
+
+    label_subtitle = ctk.CTkLabel(root, text="Subtitle Font", font=get_font("subtitle"))
+    label_subtitle.pack(pady=5)
+
+    label_normal = ctk.CTkLabel(root, text="Normal Font", font=get_font())
+    label_normal.pack(pady=5)
+    
+    label_small_italic = ctk.CTkLabel(root, text="Small Italic Font", font=get_font("small", "italic"))
+    label_small_italic.pack(pady=5)
+
+    root.mainloop()
