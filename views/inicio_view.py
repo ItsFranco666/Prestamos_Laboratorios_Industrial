@@ -35,11 +35,11 @@ class MainWindow(ctk.CTk):
         self.show_student_management() # Default view
 
     def create_sidebar(self):
-        self.sidebar_frame = ctk.CTkFrame(self, width=220, corner_radius=0) # Increased width slightly
-        self.sidebar_frame.grid(row=0, column=0, rowspan=2, sticky="nsew") # rowspan to span header potentially
+        self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0) # Increased width slightly
+        self.sidebar_frame.grid(row=0, column=0, rowspan=3, sticky="nsew") # rowspan to span header potentially
         self.sidebar_frame.grid_rowconfigure(8, weight=1) # Pushes logout/settings to bottom
 
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Sistema de\nGestión U", font=get_font("subtitle", "bold"))
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Sistema de\nGestión de Laboratorios", font=get_font("subtitle", "bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 20))
         
         self.nav_buttons = {}
@@ -55,7 +55,7 @@ class MainWindow(ctk.CTk):
         
         for i, (text, command, icon_name) in enumerate(nav_items, 1):
             # Placeholder for icon loading, replace with actual icon handling
-            # icon_image = self.load_icon(icon_name) 
+            # icon_image = self.load_icon(icon_name)
             btn = ctk.CTkButton(
                 self.sidebar_frame,
                 text=text,
@@ -65,8 +65,8 @@ class MainWindow(ctk.CTk):
                 height=40,
                 font=get_font("normal"),
                 corner_radius=8, # Rounded buttons
-                # fg_color="transparent", # If you want hover effects to be more prominent
-                # hover_color=("#d3d3d3", "#333333")
+                fg_color="transparent", # If you want hover effects to be more prominent
+                hover_color=("#d3d3d3", "#333333")
             )
             btn.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
             self.nav_buttons[text] = btn
@@ -166,6 +166,13 @@ class MainWindow(ctk.CTk):
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
+        # Disparar el evento ThemeChanged para que los widgets actualicen sus estilos
+        self.event_generate("<<ThemeChanged>>")
+        # Forzar la actualización de todos los widgets hijos
+        for widget in self.winfo_children():
+            widget.event_generate("<<ThemeChanged>>")
+            for child in widget.winfo_children():
+                child.event_generate("<<ThemeChanged>>")
 
     def set_app_icon(self):
         try:

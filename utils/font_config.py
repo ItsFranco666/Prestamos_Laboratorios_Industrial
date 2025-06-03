@@ -5,15 +5,15 @@ def get_font(size_category="normal", weight="normal"):
     """
     Retorna un objeto de CTkFont dependiendo del tipo de texto
     """
-    size = 12  # Default normal size
+    size = 18  # Default normal size
     if size_category == "title":
-        size = 24
+        size = 28
     elif size_category == "subtitle":
-        size = 18
+        size = 20
     elif size_category == "large":
-        size = 16
+        size = 24
     elif size_category == "small":
-        size = 10
+        size = 18
 
     return ctk.CTkFont(family="Roboto", size=size, weight=weight)
 

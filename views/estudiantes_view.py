@@ -13,6 +13,9 @@ class StudentManagementView(ctk.CTkFrame):
         self.pack_propagate(False) # Evitar que los widgets hijos controlen el tamaño del frame principal
         self.pack(padx=15, pady=15) # Padding general para la vista
 
+        # Vincular el cambio de tema
+        self.bind("<<ThemeChanged>>", self.on_theme_change)
+
         self.setup_ui()
         self.refresh_students()
     
@@ -142,7 +145,7 @@ class StudentManagementView(ctk.CTkFrame):
         self.tree.heading("Codigo", text="📋 Código", anchor="w")
         self.tree.heading("Nombre", text="👤 Nombre", anchor="w")
         self.tree.heading("Cedula", text="🆔 Cédula", anchor="w")
-        self.tree.heading("Proyecto", text="📚 Proyecto Curricular", anchor="w")
+        self.tree.heading("Proyecto", text="📁 Proyecto Curricular", anchor="w")
 
         # Configurar columnas - sin columna de acciones
         self.tree.column("#0", width=0, stretch=False)  # Ocultar columna del tree
@@ -161,8 +164,6 @@ class StudentManagementView(ctk.CTkFrame):
                                    width=12)
         scrollbar.pack(side="right", fill="y", pady=5, padx=(0,5))
         self.tree.configure(yscrollcommand=scrollbar.set)
-
-
 
     def refresh_students(self):
         for item in self.tree.get_children():
@@ -282,6 +283,61 @@ class StudentManagementView(ctk.CTkFrame):
             codigo, nombre, cedula, proyecto_id = dialog.result
             self.student_model.add_student(codigo, nombre, cedula, proyecto_id)
             self.refresh_students()
+
+    def on_theme_change(self, event=None):
+        """Actualiza los estilos de la tabla cuando cambia el tema"""
+        if hasattr(self, 'tree'):
+            style = ttk.Style()
+            current_mode = ctk.get_appearance_mode()
+            
+            if current_mode == "Dark":
+                tree_bg = "#2b2b2b"
+                text_color = "#ffffff" 
+                selected_color = "#404040"
+                heading_bg = "#4B5563"
+                alternate_bg = "#323232"
+            else:
+                tree_bg = "#ffffff"
+                text_color = "#2b2b2b"
+                selected_color = "#e3f2fd"
+                heading_bg = "#E5E7EB"
+                alternate_bg = "#f8f9fa"
+            
+            style.configure("Modern.Treeview", 
+                          background=tree_bg,
+                          foreground=text_color,
+                          fieldbackground=tree_bg,
+                          borderwidth=0,
+                          relief="flat",
+                          rowheight=35,
+                          font=get_font("normal"))
+            
+            style.map('Modern.Treeview', 
+                     background=[('selected', selected_color)],
+                     foreground=[('selected', text_color)])
+            
+            style.configure("Modern.Treeview.Heading",
+                          background=heading_bg,
+                          foreground=text_color,
+                          borderwidth=0,
+                          relief="flat",
+                          font=get_font("normal", "bold"),
+                          padding=(10, 8))
+            
+            style.map("Modern.Treeview.Heading", 
+                     background=[('active', "#525E75" if current_mode == "Dark" else "#CFD8DC")])
+            
+            # Actualizar colores de filas alternadas
+            self.tree.tag_configure('alternate', background=alternate_bg)
+            
+            # Forzar actualización visual
+            self.tree.update_idletasks()
+            
+            # Refrescar la tabla para aplicar los cambios
+            self.refresh_students()
+            
+            # Forzar actualización visual de todos los widgets
+            self.update_idletasks()
 
 class StudentDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, student_data_for_dialog=None, student_model=None):
