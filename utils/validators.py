@@ -40,6 +40,21 @@ def is_valid_datetime_format(date_string: str, fmt: str = "%Y-%m-%d %H:%M:%S") -
     except ValueError:
         return False
 
+def is_valid_id(value: str, length: int = None) -> bool:
+    """ Comprueba que una identificacion sea correcta """
+    if not is_not_empty(value):
+        return False
+    try:
+        # Try to convert to integer
+        int_value = int(value)
+        # Check if it's exactly 11 digits
+        if len(value) != 11:
+            return False
+        return True
+    except ValueError:
+        # If conversion to int fails, it's not a valid number
+        return False
+
 def is_valid_time_format(time_string: str, fmt: str = "%H:%M:%S") -> bool:
     """Checks if a string matches a time format."""
     try:

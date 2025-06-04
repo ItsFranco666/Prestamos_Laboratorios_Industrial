@@ -2,6 +2,7 @@ import customtkinter as ctk
 from tkinter import messagebox, ttk
 from database.models import StudentModel
 from utils.font_config import get_font # Asegúrate que utils.font_config exista y sea importable
+from utils.validators import *
 
 class StudentManagementView(ctk.CTkFrame):
     def __init__(self, parent):
@@ -55,7 +56,7 @@ class StudentManagementView(ctk.CTkFrame):
     
     def create_students_treeview_table(self):
         # Container frame principal con bordes redondeados y sombra
-        table_main_container = ctk.CTkFrame(self, corner_radius=15, 
+        table_main_container = ctk.CTkFrame(self, corner_radius=8, 
                                           border_width=1,
                                           border_color=("gray80", "gray20"))
         table_main_container.pack(fill="both", expand=True, pady=(0,10), padx=0)
@@ -131,7 +132,7 @@ class StudentManagementView(ctk.CTkFrame):
 
         # Container para el Treeview con bordes redondeados internos
         table_container_frame = ctk.CTkFrame(table_main_container, 
-                                           corner_radius=10,
+                                           corner_radius=15,
                                            fg_color=("white", "gray15"))
         table_container_frame.pack(fill="both", expand=True, padx=8, pady=8)
 
@@ -204,7 +205,7 @@ class StudentManagementView(ctk.CTkFrame):
             self.selected_actions_frame.pack(pady=(15,0), padx=0, fill="x")
 
             self.edit_selected_btn = ctk.CTkButton(self.selected_actions_frame, 
-                                                 text="✏️ Editar Seleccionado",
+                                                 text="Editar Seleccionado",
                                                  command=self.edit_selected_student, 
                                                  state="disabled", 
                                                  font=get_font("normal"),
@@ -213,7 +214,7 @@ class StudentManagementView(ctk.CTkFrame):
             self.edit_selected_btn.pack(side="left", padx=8, pady=8)
 
             self.delete_selected_btn = ctk.CTkButton(self.selected_actions_frame, 
-                                                   text="🗑️ Eliminar Seleccionado",
+                                                   text="Eliminar Seleccionado",
                                                    command=self.delete_selected_student, 
                                                    state="disabled", 
                                                    fg_color=("#ef4444", "#dc2626"),
@@ -283,9 +284,8 @@ class StudentManagementView(ctk.CTkFrame):
             codigo, nombre, cedula, proyecto_id = dialog.result
             self.student_model.add_student(codigo, nombre, cedula, proyecto_id)
             self.refresh_students()
-
+    
     def on_theme_change(self, event=None):
-        """Actualiza los estilos de la tabla cuando cambia el tema"""
         if hasattr(self, 'tree'):
             style = ttk.Style()
             current_mode = ctk.get_appearance_mode()
@@ -296,21 +296,25 @@ class StudentManagementView(ctk.CTkFrame):
                 selected_color = "#404040"
                 heading_bg = "#4B5563"
                 alternate_bg = "#323232"
-            else:
+            else: # Light mode
                 tree_bg = "#ffffff"
                 text_color = "#2b2b2b"
                 selected_color = "#e3f2fd"
                 heading_bg = "#E5E7EB"
                 alternate_bg = "#f8f9fa"
             
+            # Ensure font is re-fetched if it could change, or use a consistent reference
+            normal_font = get_font("normal")
+            bold_font = get_font("normal", "bold")
+
             style.configure("Modern.Treeview", 
                           background=tree_bg,
                           foreground=text_color,
                           fieldbackground=tree_bg,
                           borderwidth=0,
                           relief="flat",
-                          rowheight=35,
-                          font=get_font("normal"))
+                          rowheight=35, # Consider making this a class/instance variable if it's used elsewhere
+                          font=normal_font) # Use fetched font
             
             style.map('Modern.Treeview', 
                      background=[('selected', selected_color)],
@@ -321,22 +325,19 @@ class StudentManagementView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=get_font("normal", "bold"),
+                          font=bold_font, # Use fetched font
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
                      background=[('active', "#525E75" if current_mode == "Dark" else "#CFD8DC")])
             
-            # Actualizar colores de filas alternadas
             self.tree.tag_configure('alternate', background=alternate_bg)
             
-            # Forzar actualización visual
+            # Re-populating the tree is crucial for ttk styles to apply to items
+            self.refresh_students() 
+            
+            # update_idletasks can help ensure Tkinter processes pending drawing tasks
             self.tree.update_idletasks()
-            
-            # Refrescar la tabla para aplicar los cambios
-            self.refresh_students()
-            
-            # Forzar actualización visual de todos los widgets
             self.update_idletasks()
 
 class StudentDialog(ctk.CTkToplevel):
@@ -428,6 +429,7 @@ class StudentDialog(ctk.CTkToplevel):
         except ValueError:
             messagebox.showerror("Error de Validación", "Código y Cédula deben ser números enteros.", parent=self)
             return
+            
         
         proyecto_id = None
         if proyecto_nombre_seleccionado != "Seleccione un proyecto...":
