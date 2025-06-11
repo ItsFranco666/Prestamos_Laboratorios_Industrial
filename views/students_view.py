@@ -4,7 +4,7 @@ from database.models import StudentModel
 from utils.font_config import get_font # Asegúrate que utils.font_config exista y sea importable
 from utils.validators import *
 
-class StudentManagementView(ctk.CTkFrame):
+class StudentsView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent") # Hacer el frame principal transparente
         

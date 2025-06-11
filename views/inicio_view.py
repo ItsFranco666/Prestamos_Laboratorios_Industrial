@@ -6,9 +6,9 @@ import sys
 from PIL import Image, ImageTk
 
 # Import views
-from .estudiantes_view import StudentManagementView
+from .students_view import StudentsView
 from .profesores_view import ProfesorManagementView
-from .room_management import RoomManagementView
+from .room_view import RoomView
 # from .equipment_inventory import EquipmentInventoryView # Assuming these exist or will be added
 # from .room_loans import RoomLoansView
 # from .equipment_loans import EquipmentLoansView
@@ -19,8 +19,9 @@ class MainWindow(ctk.CTk):
         super().__init__()
         
         self.title("Sistema de Gestión Universitaria")
-        self.geometry("1400x850") # Slightly increased height for better spacing
+        self.geometry("1400x850")
         
+        # Set app icon
         self.set_app_icon()
 
         self.grid_columnconfigure(1, weight=1)
@@ -33,7 +34,7 @@ class MainWindow(ctk.CTk):
         self.show_dashboard() # Default view
 
     def create_sidebar(self):
-        self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0, fg_color=("#f0f0f0", "#2b2b2b"))
+        self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0, fg_color=("#f0f0f0", "#1c1c1c"))
         self.sidebar_frame.grid(row=0, column=0, rowspan=3, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(8, weight=1)
 
@@ -43,36 +44,49 @@ class MainWindow(ctk.CTk):
         self.nav_buttons = {}
         nav_items = [
             ("Dashboard", self.show_dashboard, "dashboard_icon.png"),
-            ("Estudiantes", self.show_student_management, "students_icon.png"),
+            ("Estudiantes", self.show_students_view, "student_icon.png"),
             ("Profesores", self.show_professor_management, "professors_icon.png"),
-            ("Salas", self.show_room_management, "rooms_icon.png"),
+            ("Salas", self.show_room_view, "rooms_icon.png"),
             ("Inventario Equipos", self.show_equipment_inventory, "inventory_icon.png"),
             ("Préstamos Salas", self.show_room_loans, "room_loan_icon.png"),
             ("Préstamos Equipos", self.show_equipment_loans, "equip_loan_icon.png")
         ]
         
+        # Creacion de los botones del panel lateral
         for i, (text, command, icon_name) in enumerate(nav_items, 1):
+            # Crear el botón
             btn = ctk.CTkButton(
                 self.sidebar_frame,
                 text=text,
                 command=lambda cmd=command, view_name=text: self.switch_view(cmd, view_name),
-                height=40,
+                height=45,
                 font=get_font("normal"),
                 corner_radius=8,
                 fg_color="transparent",
-                hover_color=("#e0e0e0", "#333333"),
+                hover_color=("#ffd3a8", "#9c6d41"),
                 text_color=("#2b2b2b", "#ffffff")
             )
+            
+            # Cargar y configurar el icono si existe
+            try:
+                icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", icon_name)
+                if os.path.exists(icon_path):
+                    icon_image = Image.open(icon_path)
+                    icon_photo = ImageTk.PhotoImage(icon_image)
+                    btn.configure(image=icon_photo)
+                    btn.image = icon_photo  # Mantener una referencia
+            except Exception as e:
+                print(f"Error loading icon {icon_name}: {e}")
+            
             btn.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
             self.nav_buttons[text] = btn
         
         self.appearance_mode_label = ctk.CTkLabel(self.sidebar_frame, text="Apariencia:", anchor="w", font=get_font("small"))
-        self.appearance_mode_label.grid(row=9, column=0, padx=20, pady=(10,0), sticky="sw")
+        self.appearance_mode_label.grid(row=len(nav_items)+1, column=0, padx=20, pady=(10,0), sticky="sw")
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
                                                                command=self.change_appearance_mode_event, font=get_font("small"))
-        self.appearance_mode_optionemenu.grid(row=10, column=0, padx=20, pady=(0,20), sticky="sw")
+        self.appearance_mode_optionemenu.grid(row=len(nav_items)+2, column=0, padx=20, pady=(0,20), sticky="sw")
         self.appearance_mode_optionemenu.set(ctk.get_appearance_mode())
-
 
     def create_main_content_area(self):
         self.main_frame = ctk.CTkFrame(self, corner_radius=10, fg_color=("#ffffff", "#242424"))
@@ -88,13 +102,9 @@ class MainWindow(ctk.CTk):
         # Only the active button gets a specific color, others are transparent.
         for name, button in self.nav_buttons.items():
             if name == view_name:
-                button.configure(fg_color=("#3a7ebf", "#1f538d"))  # Active button color
+                button.configure(fg_color=("#ffa154", "#c95414"))  # Active button color
             else:
                 button.configure(fg_color="transparent")  # Reset non-active buttons to transparent
-
-        new_view = view_command() # This calls the show_... method which creates and packs the view
-        self.current_view = new_view # Update self.current_view with the returned view instance
-
 
         new_view = view_command() # This calls the show_... method which creates and packs the view
         self.current_view = new_view # Update self.current_view with the returned view instance
@@ -111,9 +121,9 @@ class MainWindow(ctk.CTk):
         # self.current_view should be set by switch_view after this returns
         return label 
 
-    def show_student_management(self):
+    def show_students_view(self):
         self.clear_main_content()
-        student_view = StudentManagementView(self.main_frame)
+        student_view = StudentsView(self.main_frame)
         student_view.pack(fill="both", expand=True)
         # self.current_view should be set by switch_view after this returns
         return student_view
@@ -124,10 +134,10 @@ class MainWindow(ctk.CTk):
         student_view.pack(fill="both", expand=True)
         return student_view
         
-    def show_room_management(self):
+    def show_room_view(self):
         self.clear_main_content()
-        # Assuming RoomManagementView is correctly imported and defined
-        room_view = RoomManagementView(self.main_frame)
+        # Assuming RoomView is correctly imported and defined
+        room_view = RoomView(self.main_frame)
         room_view.pack(fill="both", expand=True)
         return room_view
     
@@ -171,36 +181,15 @@ class MainWindow(ctk.CTk):
         new_mode = ctk.get_appearance_mode()
 
         # Only proceed if the mode actually changed, or if "System" was reselected
-        # (as system theme itself might have changed).
         if previous_mode.lower() != new_mode.lower() or new_appearance_mode == "System":
-            # Directly call on_theme_change for the current view if it exists and has the method.
-            # This is crucial for views like StudentManagementView that manage ttk.Treeview.
+            # Directly call on_theme_change for the current view if it exists and has the method
             if self.current_view and hasattr(self.current_view, 'on_theme_change'):
                 self.current_view.on_theme_change()
-            
-            # If other persistent UI elements (e.g., sidebar) also need explicit updates,
-            # you can call their theme change handlers here too.
-            # For example, if sidebar_frame had its own ttk widgets needing manual refresh:
-            # if hasattr(self.sidebar_frame, 'on_theme_change'):
-            #     self.sidebar_frame.on_theme_change()
-            # else: # Or use event generation if it's set up to listen
-            #     self.sidebar_frame.event_generate("<<ThemeChanged>>")
-
-            # The general event generation for other widgets can remain if they rely on it,
-            # but the direct call for self.current_view is more targeted for this problem.
-            # Ensure other parts of your UI correctly update. For simple CTk widgets,
-            # ctk.set_appearance_mode() is often enough. Ttk widgets are the main concern.
-            
-            # You might still want to generate a general event for any other listeners
-            # self.event_generate("<<ThemeChanged>>") # Event for MainWindow itself
-            # For direct children like sidebar:
-            # self.sidebar_frame.event_generate("<<ThemeChanged>>")
-
 
     def set_app_icon(self):
         try:
-            icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "icons", "app_icon.ico")
-            icon_path_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "icons", "app_icon.png")
+            icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico")
+            icon_path_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.png")
 
             final_icon_path = None
             if sys.platform == "win32" and os.path.exists(icon_path_ico):

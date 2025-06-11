@@ -195,21 +195,17 @@ class RoomModel:
     def get_all_rooms_with_status(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        # Check active loans (hora_salida IS NULL or fecha_devolucion IS NULL for equipment in room)
-        # This query determines if a room is occupied by an active room loan.
-        # For equipment loans, the room status isn't directly 'occupied' by the equipment loan itself,
-        # but rather the equipment becomes 'IN USE'. A room is occupied if it's part of an active room loan.
         cursor.execute('''
             SELECT 
-                s.codigo, 
+                s.codigo_interno, 
                 s.nombre,
                 CASE 
                     WHEN EXISTS (
                         SELECT 1 FROM prestamos_salas_profesores psp
-                        WHERE psp.sala_id = s.codigo AND psp.hora_salida IS NULL
+                        WHERE psp.sala_id = s.id AND psp.hora_salida IS NULL
                     ) OR EXISTS (
                         SELECT 1 FROM prestamos_salas_estudiantes pse
-                        WHERE pse.sala_id = s.codigo AND pse.hora_salida IS NULL
+                        WHERE pse.sala_id = s.id AND pse.hora_salida IS NULL
                     ) THEN 'Ocupada'
                     ELSE 'Disponible'
                 END as estado
@@ -223,7 +219,7 @@ class RoomModel:
     def get_all_rooms_for_dropdown(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT codigo, nombre FROM salas ORDER BY nombre ASC')
+        cursor.execute('SELECT codigo_interno, nombre FROM salas ORDER BY nombre ASC')
         rooms = cursor.fetchall()
         conn.close()
         return rooms
@@ -231,7 +227,7 @@ class RoomModel:
     def get_room_by_code(self, codigo):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT codigo, nombre FROM salas WHERE codigo = ?', (codigo,))
+        cursor.execute('SELECT codigo_interno, nombre FROM salas WHERE codigo_interno = ?', (codigo,))
         room = cursor.fetchone()
         conn.close()
         return room
@@ -240,7 +236,7 @@ class RoomModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute('INSERT INTO salas (codigo, nombre) VALUES (?, ?)', (codigo, nombre))
+            cursor.execute('INSERT INTO salas (codigo_interno, nombre) VALUES (?, ?)', (codigo, nombre))
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
@@ -255,7 +251,7 @@ class RoomModel:
         try:
             if new_codigo is None:
                 new_codigo = original_codigo
-            cursor.execute('UPDATE salas SET codigo = ?, nombre = ? WHERE codigo = ?', (new_codigo, nombre, original_codigo))
+            cursor.execute('UPDATE salas SET codigo_interno = ?, nombre = ? WHERE codigo_interno = ?', (new_codigo, nombre, original_codigo))
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
@@ -268,7 +264,7 @@ class RoomModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute('DELETE FROM salas WHERE codigo = ?', (codigo,))
+            cursor.execute('DELETE FROM salas WHERE codigo_interno = ?', (codigo,))
             conn.commit()
         except sqlite3.Error as e:
             print(f"Error deleting room: {e}") # Handle FK constraints

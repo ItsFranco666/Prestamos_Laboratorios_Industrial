@@ -26,7 +26,8 @@ class DatabaseManager:
             );
             
             CREATE TABLE IF NOT EXISTS salas (
-                codigo INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo_interno TEXT,
                 nombre TEXT NOT NULL
             );
             
@@ -67,7 +68,7 @@ class DatabaseManager:
             
             CREATE TABLE IF NOT EXISTS equipos (
                 codigo TEXT PRIMARY KEY,
-                sala_id INTEGER REFERENCES salas(codigo),
+                sala_id INTEGER REFERENCES salas(id),
                 numero_equipo INTEGER,
                 descripcion TEXT,
                 estado INTEGER NOT NULL CHECK (estado IN (0, 1)),
@@ -79,7 +80,7 @@ class DatabaseManager:
                 fecha_entrada TIMESTAMP NOT NULL,
                 laboratorista INTEGER REFERENCES personal_laboratorio(id),
                 monitor INTEGER REFERENCES personal_laboratorio(id),
-                sala_id INTEGER REFERENCES salas(codigo) NOT NULL,
+                sala_id INTEGER REFERENCES salas(id) NOT NULL,
                 profesor_id INTEGER REFERENCES profesores(cedula) NOT NULL,
                 hora_salida TIME,
                 firma_profesor INTEGER,
@@ -91,7 +92,7 @@ class DatabaseManager:
                 fecha_entrada TIMESTAMP NOT NULL,
                 laboratorista INTEGER REFERENCES personal_laboratorio(id),
                 monitor INTEGER REFERENCES personal_laboratorio(id),
-                sala_id INTEGER REFERENCES salas(codigo) NOT NULL,
+                sala_id INTEGER REFERENCES salas(id) NOT NULL,
                 estudiante_id INTEGER REFERENCES estudiantes(codigo) NOT NULL,
                 hora_salida TIME,
                 numero_equipo INTEGER,
@@ -107,7 +108,7 @@ class DatabaseManager:
                 monitor_entrega INTEGER REFERENCES personal_laboratorio(id),
                 equipo_codigo TEXT REFERENCES inventario(codigo) NOT NULL,
                 profesor_id INTEGER REFERENCES profesores(cedula) NOT NULL,
-                sala_id INTEGER REFERENCES salas(codigo),
+                sala_id INTEGER REFERENCES salas(id),
                 titulo_practica TEXT,
                 estado INTEGER NOT NULL CHECK (estado IN (0, 1)),
                 laboratorista_devolucion INTEGER REFERENCES personal_laboratorio(id),
@@ -125,7 +126,7 @@ class DatabaseManager:
                 monitor_entrega INTEGER REFERENCES personal_laboratorio(id),
                 estudiante_id INTEGER REFERENCES estudiantes(codigo) NOT NULL,
                 numero_estudiantes INTEGER,
-                sala_id INTEGER REFERENCES salas(codigo) NOT NULL,
+                sala_id INTEGER REFERENCES salas(id) NOT NULL,
                 titulo_practica TEXT,
                 estado INTEGER NOT NULL CHECK (estado IN (0, 1)),
                 laboratorista_devolucion INTEGER REFERENCES personal_laboratorio(id),
@@ -193,21 +194,53 @@ class DatabaseManager:
         if cursor.fetchone()[0] == 0:
             cursor.executescript('''
                 INSERT INTO proyectos_curriculares (nombre) VALUES 
-                ('Ingeniería de Sistemas'),
-                ('Ingeniería Electrónica'),
-                ('Ingeniería Industrial');
+                ('Ingeniería Civil'),
+                ('Ingeniería de Produccion'),
+                ('Ingeniería Eléctrica'),
+                ('Ingeniería en Control y Automatización'),
+                ('Ingeniería en Telecomunicaciones'),
+                ('Ingeniería en Telematica'),
+                ('Ingeniería Mecánica'),
+                ('Tecnología en Construcciones Civiles'),
+                ('Tecnología en Electricidad de Media y Baja Tensión'),
+                ('Tecnología en Electrónica Industrial'),
+                ('Tecnología en Mecánica Industrial'),
+                ('Tecnología en Gestion de la Producción Industrial'),
+                ('Tecnología en Sistematización de Datos'),
+                ('Ingeniería Industrial'),
+                ('Comunicación social y periodismo '),
+                ('Tecnología Electrónica'),
+                ('Almacén'),
+                ('Laboratorio de Ciencias Basicas');
                 
                 INSERT INTO sedes (nombre) VALUES 
-                ('Sede Central'),
-                ('Sede Norte');
+                ('Facultad Tecnológica');
                 
                 INSERT INTO personal_laboratorio (nombre, cargo) VALUES 
-                ('Juan Pérez', 0),
-                ('María González', 1),
-                ('Carlos López', 0);
+                ('Andres Felipe Franco Tellez', 1),
+                ('Evelyn Sofìa Cañon Sanchez', 1),
+                ('Allyson Daniela Navarrete Ramirez', 1),
+                ('David Santiago Duarte Urueña', 1),
+                ('Mariam Elizabeth Vera Morales', 0),
+                ('Wilfredo Ramirez Pretel', 0),
+                ('José Jesús Barajas Sotero', 0),
+                ('Valeria Pamplona Gutierrez', 0);
                 
-                INSERT INTO salas (codigo, nombre) VALUES 
-                (101, 'Laboratorio de Sistemas 1'),
-                (102, 'Laboratorio de Electrónica'),
-                (103, 'Aula de Cómputo');
+                INSERT INTO salas (codigo_interno, nombre) VALUES 
+                ('320', 'FMS'),
+                ('317', 'HAS'),
+                ('321', 'GEIO'),
+                ('416', 'SSA'),
+                ('417', 'SSB'),
+                ('B1, 101', 'PLANTA DE EXTRACCIóN'),
+                ('0', 'GRUPO INVESTIGACIÓN'),
+                ('N/A', 'OFICINAS LABORATORIO DE ELÉCTRICA'),
+                ('318', 'DISEÑO DE PRODUCTO'),
+                ('N/A', 'SALA PROFESORES'),
+                ('N/A', 'AUDIOVISUALES 8VO'),
+                ('N/A', 'PLANTA TIBITOC'),
+                ('N/A', 'ALMACEN'),
+                ('N/A', 'LABORATORIO GESTIÓN P'),
+                ('N/A', 'SISTEMAS DE POTENCIA '),
+                ('N/A', 'LABORATORIO CIENCIAS BASICAS');
             ''')
