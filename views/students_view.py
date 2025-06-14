@@ -60,114 +60,44 @@ class StudentsView(ctk.CTkFrame):
         self.create_students_treeview_table()
     
     def create_students_treeview_table(self):
-        # Container frame principal con bordes redondeados y sombra
+        """Crea la tabla Treeview usando los estilos globales predefinidos."""
         table_main_container = ctk.CTkFrame(self, corner_radius=8, 
                                           border_width=1,
                                           border_color=("gray80", "gray20"))
         table_main_container.pack(fill="both", expand=True, pady=(0,10), padx=0)
 
-        # Configurar estilo del Treeview para apariencia moderna
-        style = ttk.Style()
-        style.theme_use("default")
+        # Ya no se necesita configurar el estilo ttk.Style() aquí
 
-        # Altura de fila más generosa
-        new_row_height = 35
-
-        current_mode = ctk.get_appearance_mode()
-        if current_mode == "Dark":
-            tree_bg = "#2b2b2b"
-            text_color = "#ffffff" 
-            selected_color = "#404040"
-            heading_bg = "#4B5563"
-            
-            style.configure("Modern.Treeview", 
-                          background=tree_bg,
-                          foreground=text_color,
-                          fieldbackground=tree_bg,
-                          borderwidth=0,
-                          relief="flat",
-                          rowheight=new_row_height,
-                          font=get_font("normal"))
-            
-            style.map('Modern.Treeview', 
-                     background=[('selected', selected_color)],
-                     foreground=[('selected', text_color)])
-            
-            # Estilo del header moderno
-            style.configure("Modern.Treeview.Heading",
-                          background=heading_bg,
-                          foreground=text_color,
-                          borderwidth=0,
-                          relief="flat",
-                          font=get_font("normal"),
-                          padding=(10, 8))
-            
-            style.map("Modern.Treeview.Heading", 
-                     background=[('active', "#525E75")])
-        else:
-            tree_bg = "#ffffff"
-            text_color = "#2b2b2b"
-            selected_color = "#e3f2fd"
-            heading_bg = "#E5E7EB"
-            
-            style.configure("Modern.Treeview",
-                          background=tree_bg,
-                          foreground=text_color,
-                          fieldbackground=tree_bg,
-                          borderwidth=0,
-                          relief="flat",
-                          rowheight=new_row_height,
-                          font=get_font("normal"))
-            
-            style.map('Modern.Treeview',
-                     background=[('selected', selected_color)],
-                     foreground=[('selected', text_color)])
-            
-            # Estilo del header moderno
-            style.configure("Modern.Treeview.Heading",
-                          background=heading_bg,
-                          foreground=text_color,
-                          borderwidth=0,
-                          relief="flat",
-                          font=get_font("normal"),
-                          padding=(10, 8))
-            
-            style.map("Modern.Treeview.Heading", 
-                     background=[('active', "#CFD8DC")])
-
-        # Container para el Treeview con bordes redondeados internos
         table_container_frame = ctk.CTkFrame(table_main_container, 
                                            corner_radius=15,
                                            fg_color=("white", "gray15"))
         table_container_frame.pack(fill="both", expand=True, padx=8, pady=8)
 
-        # Crear el Treeview con estilo moderno (SIN columna de acciones)
+        # Crear el Treeview APLICANDO el estilo global "Modern.Treeview"
         self.tree = ttk.Treeview(table_container_frame,
                                columns=("Codigo", "Nombre", "Cedula", "Proyecto"),
                                show="tree headings",
-                               style="Modern.Treeview")
+                               style="Modern.Treeview") # Se aplica el estilo definido en MainWindow
 
-        # Configurar headers con texto visible y estilos modernos
+        # Configurar encabezados
         self.tree.heading("Codigo", text="📋 Código", anchor="w")
         self.tree.heading("Nombre", text="👤 Nombre", anchor="w")
         self.tree.heading("Cedula", text="🆔 Cédula", anchor="w")
         self.tree.heading("Proyecto", text="📁 Proyecto Curricular", anchor="w")
 
-        # Configurar columnas para que se ajusten automáticamente sin poder ser modificadas
+        # Configurar columnas
         self.tree.column("#0", width=0, stretch=False)
-        self.tree.column("Codigo", width=120, stretch=False, anchor="w")      # Ancho fijo
-        self.tree.column("Nombre", width=300, stretch=True, anchor="w")       # Se estira para ocupar espacio
-        self.tree.column("Cedula", width=150, stretch=False, anchor="w")      # Ancho fijo
-        self.tree.column("Proyecto", width=350, stretch=True, anchor="w")     # Se estira para ocupar espacio
+        self.tree.column("Codigo", width=120, stretch=False, anchor="w")
+        self.tree.column("Nombre", width=300, stretch=True, anchor="w")
+        self.tree.column("Cedula", width=150, stretch=False, anchor="w")
+        self.tree.column("Proyecto", width=350, stretch=True, anchor="w")
 
-        # Pack del Treeview con padding para el efecto de borde redondeado
         self.tree.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-
-        # <<-- NUEVO: Vincular los eventos del mouse al método que previene la redimensión -->>
+        
         self.tree.bind("<Button-1>", self.prevent_resize)
         self.tree.bind("<B1-Motion>", self.prevent_resize)
         
-        # Scrollbar moderna
+        # Scrollbar
         scrollbar = ctk.CTkScrollbar(table_container_frame, 
                                    command=self.tree.yview,
                                    corner_radius=8,
@@ -202,14 +132,14 @@ class StudentsView(ctk.CTkFrame):
             if i % 2 == 1:
                 self.tree.item(item_id, tags=('alternate',))
         
-        # Configurar tags para filas alternadas
+        # Configurar el color de las filas alternas según el tema actual
         current_mode = ctk.get_appearance_mode()
         if current_mode == "Dark":
             self.tree.tag_configure('alternate', background='#323232')
         else:
             self.tree.tag_configure('alternate', background='#f8f9fa')
         
-        if not hasattr(self, 'selected_actions_frame'): # Create actions frame only once
+        if not hasattr(self, 'selected_actions_frame'):
             self.selected_actions_frame = ctk.CTkFrame(self, corner_radius=12)
             self.selected_actions_frame.pack(pady=(15,0), padx=0, fill="x")
 
@@ -233,10 +163,9 @@ class StudentsView(ctk.CTkFrame):
                                                    height=35)
             self.delete_selected_btn.pack(side="right", padx=8, pady=8)
             
-            # Bind selection event after buttons are created
             self.tree.bind("<<TreeviewSelect>>", self.on_student_select)
         
-        self.on_student_select() # Ensure buttons are in correct state after refresh
+        self.on_student_select()
 
     def on_student_select(self, event=None):
         if hasattr(self, 'edit_selected_btn'): # Check if buttons exist
@@ -294,60 +223,17 @@ class StudentsView(ctk.CTkFrame):
             self.student_model.add_student(codigo, nombre, cedula, proyecto_id)
             self.refresh_students()
     
+    # --- MODIFICADO: Simplificar el método de cambio de tema ---
     def on_theme_change(self, event=None):
+        """
+        Actualiza la vista cuando cambia el tema. Los estilos ya fueron 
+        actualizados globalmente por MainWindow.
+        """
         if hasattr(self, 'tree'):
-            style = ttk.Style()
-            current_mode = ctk.get_appearance_mode()
-            
-            if current_mode == "Dark":
-                tree_bg = "#2b2b2b"
-                text_color = "#ffffff" 
-                selected_color = "#404040"
-                heading_bg = "#4B5563"
-                alternate_bg = "#323232"
-            else: # Light mode
-                tree_bg = "#ffffff"
-                text_color = "#2b2b2b"
-                selected_color = "#e3f2fd"
-                heading_bg = "#E5E7EB"
-                alternate_bg = "#f8f9fa"
-            
-            # Ensure font is re-fetched if it could change, or use a consistent reference
-            normal_font = get_font("normal")
-            bold_font = get_font("normal", "bold")
-
-            style.configure("Modern.Treeview", 
-                          background=tree_bg,
-                          foreground=text_color,
-                          fieldbackground=tree_bg,
-                          borderwidth=0,
-                          relief="flat",
-                          rowheight=35,
-                          font=normal_font)
-            
-            style.map('Modern.Treeview', 
-                     background=[('selected', selected_color)],
-                     foreground=[('selected', text_color)])
-            
-            style.configure("Modern.Treeview.Heading",
-                          background=heading_bg,
-                          foreground=text_color,
-                          borderwidth=0,
-                          relief="flat",
-                          font=bold_font,
-                          padding=(10, 8))
-            
-            style.map("Modern.Treeview.Heading", 
-                     background=[('active', "#525E75" if current_mode == "Dark" else "#CFD8DC")])
-            
-            # Configurar tags para filas alternadas
-            self.tree.tag_configure('alternate', background=alternate_bg)
-            
-            # Re-populating the tree is crucial for ttk styles to apply to items
+            # Solo necesitamos refrescar la lista de estudiantes para que 
+            # los nuevos colores de las filas alternas se apliquen.
+            # Los estilos base del Treeview se actualizan automáticamente.
             self.refresh_students()
-            
-            # update_idletasks can help ensure Tkinter processes pending drawing tasks
-            self.tree.update_idletasks()
             self.update_idletasks()
 
 class StudentDialog(ctk.CTkToplevel):

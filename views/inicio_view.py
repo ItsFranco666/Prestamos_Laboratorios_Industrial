@@ -1,5 +1,6 @@
 # In university_management/views/inicio_view.py
 import customtkinter as ctk
+from tkinter import ttk
 import os
 import sys
 # Ensure PIL is installed: pip install Pillow
@@ -27,11 +28,57 @@ class MainWindow(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
         
+        # --- NUEVO: Configurar estilos ttk al inicio ---
+        self.setup_ttk_styles()
+        
         self.current_view = None
         self.create_sidebar()
         self.create_main_content_area()
         
         self.show_dashboard() # Default view
+    
+    def setup_ttk_styles(self, theme_mode=None):
+        """Configura los estilos para ttk.Treeview de forma global."""
+        if theme_mode is None:
+            theme_mode = ctk.get_appearance_mode()
+
+        style = ttk.Style()
+        style.theme_use("default")
+        
+        normal_font = get_font("normal")
+        bold_font = get_font("normal", "bold") # Usar fuente en negrita para encabezados
+
+        # Colores según el tema
+        if theme_mode == "Dark":
+            tree_bg, text_color, selected_color, heading_bg, heading_active_bg = \
+            ("#2b2b2b", "#ffffff", "#404040", "#4B5563", "#525E75")
+        else: # Light
+            tree_bg, text_color, selected_color, heading_bg, heading_active_bg = \
+            ("#ffffff", "#2b2b2b", "#e3f2fd", "#E5E7EB", "#CFD8DC")
+
+        # Estilo principal del Treeview
+        style.configure("Modern.Treeview", 
+                        background=tree_bg,
+                        foreground=text_color,
+                        fieldbackground=tree_bg,
+                        borderwidth=0,
+                        relief="flat",
+                        rowheight=35,
+                        font=normal_font)
+        style.map('Modern.Treeview', 
+                  background=[('selected', selected_color)],
+                  foreground=[('selected', text_color)])
+        
+        # Estilo de los encabezados del Treeview
+        style.configure("Modern.Treeview.Heading",
+                        background=heading_bg,
+                        foreground=text_color,
+                        borderwidth=0,
+                        relief="flat",
+                        font=bold_font,
+                        padding=(10, 8))
+        style.map("Modern.Treeview.Heading", 
+                  background=[('active', heading_active_bg)])
 
     def create_sidebar(self):
         self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0, fg_color=("#EBEBEB", "#1c1c1c"))
@@ -174,17 +221,17 @@ class MainWindow(ctk.CTk):
         label.pack(expand=True, padx=20, pady=20)
         return label
 
+        # --- MODIFICADO: Actualizar la gestión del cambio de tema ---
     def change_appearance_mode_event(self, new_appearance_mode: str):
-        """Handles theme change and ensures the current view updates immediately."""
-        previous_mode = ctk.get_appearance_mode()
+        """Maneja el cambio de tema y asegura que la vista actual se actualice."""
         ctk.set_appearance_mode(new_appearance_mode)
-        new_mode = ctk.get_appearance_mode()
-
-        # Only proceed if the mode actually changed, or if "System" was reselected
-        if previous_mode.lower() != new_mode.lower() or new_appearance_mode == "System":
-            # Directly call on_theme_change for the current view if it exists and has the method
-            if self.current_view and hasattr(self.current_view, 'on_theme_change'):
-                self.current_view.on_theme_change()
+        
+        # Vuelve a aplicar los estilos ttk para el nuevo tema
+        self.setup_ttk_styles(theme_mode=ctk.get_appearance_mode())
+        
+        # Notifica a la vista actual para que se redibuje si es necesario
+        if self.current_view and hasattr(self.current_view, 'on_theme_change'):
+            self.current_view.on_theme_change()
 
     def set_app_icon(self):
         try:
