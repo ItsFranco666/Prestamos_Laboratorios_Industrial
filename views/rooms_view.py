@@ -78,7 +78,7 @@ class RoomsView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=get_font("normal", "bold"),
+                          font=get_font("normal"),
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
@@ -108,7 +108,7 @@ class RoomsView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=get_font("normal", "bold"),
+                          font=get_font("normal"),
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
@@ -127,7 +127,7 @@ class RoomsView(ctk.CTkFrame):
                                style="Modern.Treeview")
 
         # Configurar headers con texto visible y estilos modernos
-        self.tree.heading("Codigo", text="📋 Código Interno", anchor="w")
+        self.tree.heading("Codigo", text="📋 Código", anchor="w")
         self.tree.heading("Nombre", text="🏢 Nombre", anchor="w")
         self.tree.heading("Estado", text="🚦 Estado", anchor="center")
 
@@ -182,7 +182,7 @@ class RoomsView(ctk.CTkFrame):
                       foreground=text_color,
                       borderwidth=0,
                       relief="flat",
-                      font=get_font("normal", "bold"),
+                      font=get_font("normal"),
                       padding=(10, 8))
         
         style.map("Modern.Treeview.Heading", background=[('active', active_heading_bg)])
@@ -200,7 +200,8 @@ class RoomsView(ctk.CTkFrame):
         
         # Obtener datos y filtrar
         search_term = self.search_entry.get().lower() if hasattr(self, 'search_entry') else ""
-        all_rooms = self.room_model.get_all_rooms_with_status()
+        # El modelo ahora debe devolver id, codigo, nombre, estado
+        all_rooms = self.room_model.get_all_rooms_with_status() 
         
         rooms_to_display = [
             room for room in all_rooms 
@@ -209,31 +210,31 @@ class RoomsView(ctk.CTkFrame):
         
         # Poblar tabla con datos
         for i, room_data in enumerate(rooms_to_display):
+            # Asumiendo que room_data es (id, codigo_interno, nombre, estado)
             id_sala, codigo, nombre, estado = room_data
             
-            # Asignar tags para colores de fila alternos
-            tags = []
-            if i % 2 == 1:
-                tags.append('alternate')
-            
-            # Crear un tag específico para el estado
-            estado_tag = f'status_{estado}'
-            tags.append(estado_tag)
+            # --- INICIO DE LA MODIFICACIÓN ---
 
-            self.tree.insert("", "end", iid=str(id_sala), values=(codigo, nombre, estado), tags=tags)
-        
-        # Configurar tags para filas alternadas y estados
+            # 1. Crear el texto del estado con un indicador visual (emoji)
+            #    Esto reemplaza la necesidad de colorear el texto con tags.
+            estado_display = f"🟢 {estado}" if estado == "Disponible" else f"🔴 {estado}"
+
+            # 2. Usar solo el tag para el color de fondo alterno
+            tags = ('alternate',) if i % 2 == 1 else ()
+
+            # 3. Insertar la fila con el nuevo texto de estado
+            self.tree.insert("", "end", iid=str(id_sala), values=(codigo, nombre, estado_display), tags=tags)
+            
+            # --- FIN DE LA MODIFICACIÓN ---
+
+        # Configurar tag solo para filas alternadas (ya no se necesitan los tags de estado)
         current_mode = ctk.get_appearance_mode()
         if current_mode == "Dark":
             self.tree.tag_configure('alternate', background='#323232')
         else:
             self.tree.tag_configure('alternate', background='#f8f9fa')
-            
-        # Configurar colores solo para el estado
-        self.tree.tag_configure('status_Disponible', foreground="#22c55e")  # Verde
-        self.tree.tag_configure('status_Ocupada', foreground="#ef4444")    # Rojo
         
-        # Configurar botones de acción si no existen
+        # Configurar botones de acción (sin cambios aquí)
         if not hasattr(self, 'selected_actions_frame'):
             self.selected_actions_frame = ctk.CTkFrame(self, corner_radius=12)
             self.selected_actions_frame.pack(pady=(15,0), padx=0, fill="x")

@@ -20,6 +20,11 @@ class StudentsView(ctk.CTkFrame):
         self.setup_ui()
         self.refresh_students()
     
+    def prevent_resize(self, event):
+        """Impide que el usuario redimensione las columnas con el mouse."""
+        if self.tree.identify_region(event.x, event.y) == "separator":
+            return "break"
+    
     def setup_ui(self):
         # Title
         title = ctk.CTkLabel(self, text="Gestión de Estudiantes", font=get_font("title", "bold"))
@@ -94,7 +99,7 @@ class StudentsView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=get_font("normal", "bold"),
+                          font=get_font("normal"),
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
@@ -124,7 +129,7 @@ class StudentsView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=get_font("normal", "bold"),
+                          font=get_font("normal"),
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
@@ -148,16 +153,20 @@ class StudentsView(ctk.CTkFrame):
         self.tree.heading("Cedula", text="🆔 Cédula", anchor="w")
         self.tree.heading("Proyecto", text="📁 Proyecto Curricular", anchor="w")
 
-        # Configurar columnas - sin columna de acciones
-        self.tree.column("#0", width=0, stretch=False)  # Ocultar columna del tree
-        self.tree.column("Codigo", width=120, minwidth=100, stretch=False, anchor="w")
-        self.tree.column("Nombre", width=300, minwidth=200, stretch=True, anchor="w")
-        self.tree.column("Cedula", width=150, minwidth=120, stretch=False, anchor="w")
-        self.tree.column("Proyecto", width=350, minwidth=200, stretch=True, anchor="w")
+        # Configurar columnas para que se ajusten automáticamente sin poder ser modificadas
+        self.tree.column("#0", width=0, stretch=False)
+        self.tree.column("Codigo", width=120, stretch=False, anchor="w")      # Ancho fijo
+        self.tree.column("Nombre", width=300, stretch=True, anchor="w")       # Se estira para ocupar espacio
+        self.tree.column("Cedula", width=150, stretch=False, anchor="w")      # Ancho fijo
+        self.tree.column("Proyecto", width=350, stretch=True, anchor="w")     # Se estira para ocupar espacio
 
         # Pack del Treeview con padding para el efecto de borde redondeado
         self.tree.pack(side="left", fill="both", expand=True, padx=5, pady=5)
 
+        # <<-- NUEVO: Vincular los eventos del mouse al método que previene la redimensión -->>
+        self.tree.bind("<Button-1>", self.prevent_resize)
+        self.tree.bind("<B1-Motion>", self.prevent_resize)
+        
         # Scrollbar moderna
         scrollbar = ctk.CTkScrollbar(table_container_frame, 
                                    command=self.tree.yview,
@@ -313,8 +322,8 @@ class StudentsView(ctk.CTkFrame):
                           fieldbackground=tree_bg,
                           borderwidth=0,
                           relief="flat",
-                          rowheight=35, # Consider making this a class/instance variable if it's used elsewhere
-                          font=normal_font) # Use fetched font
+                          rowheight=35,
+                          font=normal_font)
             
             style.map('Modern.Treeview', 
                      background=[('selected', selected_color)],
@@ -325,16 +334,17 @@ class StudentsView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=bold_font, # Use fetched font
+                          font=bold_font,
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
                      background=[('active', "#525E75" if current_mode == "Dark" else "#CFD8DC")])
             
+            # Configurar tags para filas alternadas
             self.tree.tag_configure('alternate', background=alternate_bg)
             
             # Re-populating the tree is crucial for ttk styles to apply to items
-            self.refresh_students() 
+            self.refresh_students()
             
             # update_idletasks can help ensure Tkinter processes pending drawing tasks
             self.tree.update_idletasks()

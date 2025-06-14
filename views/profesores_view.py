@@ -20,20 +20,21 @@ class ProfesorManagementView(ctk.CTkFrame):
         self.refresh_professors()
     
     def setup_ui(self):
+        # Title
         title = ctk.CTkLabel(self, text="Gestión de Profesores", font=get_font("title", "bold"))
         title.pack(pady=(0, 20)) # Padding inferior para separar del siguiente frame
         
-        # Frame para busqueda
+        # Search and filter frame
         search_frame = ctk.CTkFrame(self)
         search_frame.pack(fill="x", pady=(0, 15), padx=0) # Padding inferior y sin padding horizontal interno al search_frame
         
-        # Campo de Busqueda
+        # Search entry
         ctk.CTkLabel(search_frame, text="Buscar:", font=get_font("normal")).grid(row=0, column=0, padx=(10,5), pady=10, sticky="w")
         self.search_entry = ctk.CTkEntry(search_frame, placeholder_text="Cédula o nombre...", font=get_font("normal"))
         self.search_entry.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
         self.search_entry.bind("<KeyRelease>", self.on_search)
         
-        # Filtro por poryecto
+        # Project filter
         ctk.CTkLabel(search_frame, text="Proyecto:", font=get_font("normal")).grid(row=0, column=2, padx=(10,5), pady=10, sticky="w")
         self.project_filter = ctk.CTkComboBox(search_frame, 
                                              values=["Todos"] + [p[1] for p in self.profesor_model.get_curriculum_projects()],
@@ -42,8 +43,8 @@ class ProfesorManagementView(ctk.CTkFrame):
         self.project_filter.set("Todos")
         self.project_filter.configure(command=self.on_filter_change)
         
-        # Boton de añadir profesor
-        add_btn = ctk.CTkButton(search_frame, text="+ Agregar Profesor", command=self.add_profesor_dialog, font=get_font("normal"))
+        # Add professor button
+        add_btn = ctk.CTkButton(search_frame, text="+ Agregar Profesor", command=self.add_professor_dialog, font=get_font("normal"))
         add_btn.grid(row=0, column=4, padx=(10,10), pady=10) # Padding a ambos lados
         
         search_frame.grid_columnconfigure(1, weight=3) # Más peso a la búsqueda
@@ -92,7 +93,7 @@ class ProfesorManagementView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=get_font("normal", "bold"),
+                          font=get_font("normal"),
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
@@ -122,7 +123,7 @@ class ProfesorManagementView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=get_font("normal", "bold"),
+                          font=get_font("normal"),
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
@@ -271,7 +272,7 @@ class ProfesorManagementView(ctk.CTkFrame):
     def on_filter_change(self, value=None): 
         self.refresh_professors()
     
-    def add_profesor_dialog(self):
+    def add_professor_dialog(self):
         dialog = ProfesorDialog(self, "Agregar Profesor", profesor_model=self.profesor_model)
         if dialog.result:
             cedula, nombre, proyecto_id = dialog.result
@@ -306,8 +307,8 @@ class ProfesorManagementView(ctk.CTkFrame):
                           fieldbackground=tree_bg,
                           borderwidth=0,
                           relief="flat",
-                          rowheight=35, # Consider making this a class/instance variable if it's used elsewhere
-                          font=normal_font) # Use fetched font
+                          rowheight=35,
+                          font=normal_font)
             
             style.map('Modern.Treeview', 
                      background=[('selected', selected_color)],
@@ -318,16 +319,17 @@ class ProfesorManagementView(ctk.CTkFrame):
                           foreground=text_color,
                           borderwidth=0,
                           relief="flat",
-                          font=bold_font, # Use fetched font
+                          font=bold_font,
                           padding=(10, 8))
             
             style.map("Modern.Treeview.Heading", 
                      background=[('active', "#525E75" if current_mode == "Dark" else "#CFD8DC")])
             
+            # Configurar tags para filas alternadas
             self.tree.tag_configure('alternate', background=alternate_bg)
             
             # Re-populating the tree is crucial for ttk styles to apply to items
-            self.refresh_professors() 
+            self.refresh_professors()
             
             # update_idletasks can help ensure Tkinter processes pending drawing tasks
             self.tree.update_idletasks()

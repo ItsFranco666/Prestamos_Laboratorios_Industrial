@@ -34,7 +34,7 @@ class MainWindow(ctk.CTk):
         self.show_dashboard() # Default view
 
     def create_sidebar(self):
-        self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0, fg_color=("#f0f0f0", "#1c1c1c"))
+        self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0, fg_color=("#EBEBEB", "#1c1c1c"))
         self.sidebar_frame.grid(row=0, column=0, rowspan=3, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(8, weight=1)
 

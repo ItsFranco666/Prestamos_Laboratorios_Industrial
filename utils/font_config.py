@@ -1,21 +1,20 @@
-# In university_management/utils/font_config.py
 import customtkinter as ctk
 
 def get_font(size_category="normal", weight="normal"):
     """
     Retorna un objeto de CTkFont dependiendo del tipo de texto
     """
-    size = 18  # Default normal size
+    size = 20  # Default normal size
     if size_category == "title":
-        size = 28
+        size = 30
     elif size_category == "subtitle":
-        size = 20
+        size = 25
     elif size_category == "large":
         size = 24
     elif size_category == "small":
         size = 18
 
-    return ctk.CTkFont(family="Roboto", size=size, weight=weight)
+    return ctk.CTkFont(family="Open Sans", size=size, weight=weight)
 
 # Example usage (optional, for testing):
 if __name__ == '__main__':
@@ -33,7 +32,7 @@ if __name__ == '__main__':
     label_normal = ctk.CTkLabel(root, text="Normal Font", font=get_font())
     label_normal.pack(pady=5)
     
-    label_small_italic = ctk.CTkLabel(root, text="Small Italic Font", font=get_font("small", "italic"))
-    label_small_italic.pack(pady=5)
+    label_small = ctk.CTkLabel(root, text="Small Font", font=get_font("small"))
+    label_small.pack(pady=5)
 
     root.mainloop()
