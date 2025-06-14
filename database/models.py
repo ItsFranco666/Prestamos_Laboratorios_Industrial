@@ -197,6 +197,7 @@ class RoomModel:
         cursor = conn.cursor()
         cursor.execute('''
             SELECT 
+                s.id,
                 s.codigo_interno, 
                 s.nombre,
                 CASE 

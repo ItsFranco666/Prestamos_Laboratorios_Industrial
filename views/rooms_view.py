@@ -2,46 +2,40 @@ import customtkinter as ctk
 from tkinter import messagebox, ttk
 from database.models import RoomModel
 from utils.font_config import get_font
-from utils.validators import *
 
-class RoomView(ctk.CTkFrame):
+class RoomsView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
         
         self.room_model = RoomModel()
         
-        # Configurar padding para el frame principal de la vista
         self.pack_propagate(False)
-        self.pack(padx=15, pady=15)
+        self.pack(padx=15, pady=15, fill="both", expand=True)
 
-        # Vincular el cambio de tema
         self.bind("<<ThemeChanged>>", self.on_theme_change)
 
+        # Orden correcto de inicialización
         self.setup_ui()
         self.refresh_rooms()
     
     def setup_ui(self):
-        # Title
         title = ctk.CTkLabel(self, text="Gestión de Salas", font=get_font("title", "bold"))
         title.pack(pady=(0, 20))
         
-        # Search and filter frame
         search_frame = ctk.CTkFrame(self)
         search_frame.pack(fill="x", pady=(0, 15), padx=0)
         
-        # Search entry
         ctk.CTkLabel(search_frame, text="Buscar:", font=get_font("normal")).grid(row=0, column=0, padx=(10,5), pady=10, sticky="w")
-        self.search_entry = ctk.CTkEntry(search_frame, placeholder_text="Código o nombre de sala...", font=get_font("normal"))
+        self.search_entry = ctk.CTkEntry(search_frame, placeholder_text="Código o nombre de la sala...", font=get_font("normal"))
         self.search_entry.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
         self.search_entry.bind("<KeyRelease>", self.on_search)
         
-        # Add room button
         add_btn = ctk.CTkButton(search_frame, text="+ Agregar Sala", command=self.add_room_dialog, font=get_font("normal"))
         add_btn.grid(row=0, column=2, padx=(10,10), pady=10)
         
-        search_frame.grid_columnconfigure(1, weight=3)
+        search_frame.grid_columnconfigure(1, weight=1)
         
-        # Rooms table using ttk.Treeview
+        # Llamada para crear la tabla
         self.create_rooms_treeview_table()
     
     def create_rooms_treeview_table(self):
@@ -129,18 +123,19 @@ class RoomView(ctk.CTkFrame):
         # Crear el Treeview con estilo moderno
         self.tree = ttk.Treeview(table_container_frame,
                                columns=("Codigo", "Nombre", "Estado"),
-                               show="headings",
+                               show="tree headings",
                                style="Modern.Treeview")
 
         # Configurar headers con texto visible y estilos modernos
-        self.tree.heading("Codigo", text="📋 Código", anchor="w")
+        self.tree.heading("Codigo", text="📋 Código Interno", anchor="w")
         self.tree.heading("Nombre", text="🏢 Nombre", anchor="w")
-        self.tree.heading("Estado", text="🔍 Estado", anchor="w")
+        self.tree.heading("Estado", text="🚦 Estado", anchor="center")
 
         # Configurar columnas
-        self.tree.column("Codigo", width=120, minwidth=100, stretch=False, anchor="w")
-        self.tree.column("Nombre", width=300, minwidth=200, stretch=True, anchor="w")
-        self.tree.column("Estado", width=100, minwidth=100, stretch=False, anchor="w")
+        self.tree.column("#0", width=0, stretch=False)  # Ocultar columna del tree
+        self.tree.column("Codigo", width=150, minwidth=120, stretch=False, anchor="w")
+        self.tree.column("Nombre", width=400, minwidth=250, stretch=True, anchor="w")
+        self.tree.column("Estado", width=150, minwidth=120, stretch=False, anchor="center")
 
         # Pack del Treeview con padding para el efecto de borde redondeado
         self.tree.pack(side="left", fill="both", expand=True, padx=5, pady=5)
@@ -153,83 +148,112 @@ class RoomView(ctk.CTkFrame):
         scrollbar.pack(side="right", fill="y", pady=5, padx=(0,5))
         self.tree.configure(yscrollcommand=scrollbar.set)
 
+    def update_treeview_style(self):
+        style = ttk.Style()
+        style.theme_use("default")
+        
+        new_row_height = 35
+        current_mode = ctk.get_appearance_mode()
+        
+        if current_mode == "Dark":
+            tree_bg, text_color, selected_color, heading_bg, alternate_bg = ("#2b2b2b", "#ffffff", "#404040", "#4B5563", "#323232")
+            active_heading_bg = "#525E75"
+        else: # Light mode
+            tree_bg, text_color, selected_color, heading_bg, alternate_bg = ("#ffffff", "#2b2b2b", "#e3f2fd", "#E5E7EB", "#f8f9fa")
+            active_heading_bg = "#CFD8DC"
+        
+        # Estilo general de la tabla
+        style.configure("Modern.Treeview", 
+                      background=tree_bg,
+                      foreground=text_color,
+                      fieldbackground=tree_bg,
+                      borderwidth=0,
+                      relief="flat",
+                      rowheight=new_row_height,
+                      font=get_font("normal"))
+        
+        style.map('Modern.Treeview', 
+                 background=[('selected', selected_color)],
+                 foreground=[('selected', text_color)])
+        
+        # Estilo de los encabezados
+        style.configure("Modern.Treeview.Heading",
+                      background=heading_bg,
+                      foreground=text_color,
+                      borderwidth=0,
+                      relief="flat",
+                      font=get_font("normal", "bold"),
+                      padding=(10, 8))
+        
+        style.map("Modern.Treeview.Heading", background=[('active', active_heading_bg)])
+        
+        # Estilos para las filas (tags)
+        if hasattr(self, 'tree'):
+            self.tree.tag_configure('alternate', background=alternate_bg)
+            self.tree.tag_configure('Disponible', foreground="#22c55e") # Green
+            self.tree.tag_configure('Ocupada', foreground="#ef4444") # Red
+
     def refresh_rooms(self):
+        # Limpiar tabla
         for item in self.tree.get_children():
             self.tree.delete(item)
         
-        search_term = self.search_entry.get() if hasattr(self, 'search_entry') else ""
-        rooms = self.room_model.get_all_rooms_with_status()
+        # Obtener datos y filtrar
+        search_term = self.search_entry.get().lower() if hasattr(self, 'search_entry') else ""
+        all_rooms = self.room_model.get_all_rooms_with_status()
         
-        for i, room_data in enumerate(rooms):
-            codigo_display = str(room_data[0])
-            nombre_display = room_data[1]
-            estado_display = room_data[2]
+        rooms_to_display = [
+            room for room in all_rooms 
+            if not search_term or search_term in str(room[1]).lower() or search_term in room[2].lower()
+        ]
+        
+        # Poblar tabla con datos
+        for i, room_data in enumerate(rooms_to_display):
+            id_sala, codigo, nombre, estado = room_data
             
-            item_id = self.tree.insert("", "end", iid=str(room_data[0]), values=(
-                codigo_display,
-                nombre_display,
-                estado_display
-            ))
-            
-            # Alternar colores de fila para mejor legibilidad
+            # Asignar tags para colores de fila alternos
+            tags = []
             if i % 2 == 1:
-                self.tree.item(item_id, tags=('alternate',))
+                tags.append('alternate')
             
-            # Color según estado
-            if estado_display == "Ocupada":
-                self.tree.item(item_id, tags=('ocupada',))
-            else:
-                self.tree.item(item_id, tags=('disponible',))
+            # Crear un tag específico para el estado
+            estado_tag = f'status_{estado}'
+            tags.append(estado_tag)
+
+            self.tree.insert("", "end", iid=str(id_sala), values=(codigo, nombre, estado), tags=tags)
         
         # Configurar tags para filas alternadas y estados
         current_mode = ctk.get_appearance_mode()
         if current_mode == "Dark":
             self.tree.tag_configure('alternate', background='#323232')
-            self.tree.tag_configure('ocupada', foreground='#ff9800')
-            self.tree.tag_configure('disponible', foreground='#4caf50')
         else:
             self.tree.tag_configure('alternate', background='#f8f9fa')
-            self.tree.tag_configure('ocupada', foreground='#f57c00')
-            self.tree.tag_configure('disponible', foreground='#2e7d32')
+            
+        # Configurar colores solo para el estado
+        self.tree.tag_configure('status_Disponible', foreground="#22c55e")  # Verde
+        self.tree.tag_configure('status_Ocupada', foreground="#ef4444")    # Rojo
         
+        # Configurar botones de acción si no existen
         if not hasattr(self, 'selected_actions_frame'):
             self.selected_actions_frame = ctk.CTkFrame(self, corner_radius=12)
             self.selected_actions_frame.pack(pady=(15,0), padx=0, fill="x")
 
-            self.edit_selected_btn = ctk.CTkButton(self.selected_actions_frame, 
-                                                 text="Editar Seleccionado",
-                                                 command=self.edit_selected_room, 
-                                                 state="disabled", 
-                                                 font=get_font("normal"),
-                                                 corner_radius=8,
-                                                 height=35)
+            self.edit_selected_btn = ctk.CTkButton(self.selected_actions_frame, text="Editar Seleccionada", command=self.edit_selected_room, state="disabled", font=get_font("normal"), corner_radius=8, height=35)
             self.edit_selected_btn.pack(side="left", padx=8, pady=8)
 
-            self.delete_selected_btn = ctk.CTkButton(self.selected_actions_frame, 
-                                                   text="Eliminar Seleccionado",
-                                                   command=self.delete_selected_room, 
-                                                   state="disabled", 
-                                                   fg_color=("#ef4444", "#dc2626"),
-                                                   hover_color=("#dc2626", "#b91c1c"),
-                                                   font=get_font("normal"),
-                                                   corner_radius=8,
-                                                   height=35)
+            self.delete_selected_btn = ctk.CTkButton(self.selected_actions_frame, text="Eliminar Seleccionada", command=self.delete_selected_room, state="disabled", fg_color=("#ef4444", "#dc2626"), hover_color=("#dc2626", "#b91c1c"), font=get_font("normal"), corner_radius=8, height=35)
             self.delete_selected_btn.pack(side="right", padx=8, pady=8)
             
-            # Bind selection event after buttons are created
             self.tree.bind("<<TreeviewSelect>>", self.on_room_select)
         
         self.on_room_select()
 
     def on_room_select(self, event=None):
         if hasattr(self, 'edit_selected_btn'):
-            selected_item_iid = self.tree.focus()
-            if selected_item_iid:
-                self.edit_selected_btn.configure(state="normal")
-                self.delete_selected_btn.configure(state="normal")
-            else:
-                self.edit_selected_btn.configure(state="disabled")
-                self.delete_selected_btn.configure(state="disabled")
+            selected_item_iid = self.tree.focus() 
+            is_selected = bool(selected_item_iid)
+            self.edit_selected_btn.configure(state="normal" if is_selected else "disabled")
+            self.delete_selected_btn.configure(state="normal" if is_selected else "disabled")
 
     def get_selected_room_data(self):
         selected_item_iid = self.tree.focus()
@@ -238,36 +262,33 @@ class RoomView(ctk.CTkFrame):
             return None
         
         tree_values = self.tree.item(selected_item_iid, "values")
-        codigo = tree_values[0]
-        nombre = tree_values[1]
-        estado = tree_values[2]
-        
-        return (codigo, nombre, estado)
+        return (tree_values[0], tree_values[1])  # Retorna (codigo_interno, nombre)
 
     def edit_selected_room(self):
         room_data = self.get_selected_room_data()
         if room_data:
-            dialog = RoomDialog(self, "Editar Sala", room_data=room_data, room_model=self.room_model)
-            if dialog.result:
+            dialog = RoomDialog(self, "Editar Sala", room_data_for_dialog=room_data)
+            if dialog.result: 
+                original_codigo, nombre, new_codigo = dialog.result
+                self.room_model.update_room(original_codigo, nombre, new_codigo=new_codigo)
                 self.refresh_rooms()
 
     def delete_selected_room(self):
         room_data = self.get_selected_room_data()
         if room_data:
-            codigo_to_delete = room_data[0]
-            nombre_to_delete = room_data[1]
-            if messagebox.askyesno("Confirmar Eliminación", 
-                                  f"¿Está seguro de eliminar la sala {nombre_to_delete} (Cód: {codigo_to_delete})?", 
-                                  parent=self):
-                self.room_model.delete_room(codigo_to_delete)
+            codigo, nombre = room_data
+            if messagebox.askyesno("Confirmar Eliminación", f"¿Está seguro de eliminar la sala {nombre} (Cód: {codigo})?", parent=self):
+                self.room_model.delete_room(codigo)
                 self.refresh_rooms()
     
-    def on_search(self, event=None):
+    def on_search(self, event=None): 
         self.refresh_rooms()
     
     def add_room_dialog(self):
-        dialog = RoomDialog(self, "Agregar Sala", room_model=self.room_model)
+        dialog = RoomDialog(self, "Agregar Sala")
         if dialog.result:
+            codigo, nombre = dialog.result
+            self.room_model.add_room(codigo, nombre)
             self.refresh_rooms()
     
     def on_theme_change(self, event=None):
@@ -281,13 +302,14 @@ class RoomView(ctk.CTkFrame):
                 selected_color = "#404040"
                 heading_bg = "#4B5563"
                 alternate_bg = "#323232"
-            else:
+            else: # Light mode
                 tree_bg = "#ffffff"
                 text_color = "#2b2b2b"
                 selected_color = "#e3f2fd"
                 heading_bg = "#E5E7EB"
                 alternate_bg = "#f8f9fa"
             
+            # Ensure font is re-fetched if it could change, or use a consistent reference
             normal_font = get_font("normal")
             bold_font = get_font("normal", "bold")
 
@@ -315,45 +337,48 @@ class RoomView(ctk.CTkFrame):
             style.map("Modern.Treeview.Heading", 
                      background=[('active', "#525E75" if current_mode == "Dark" else "#CFD8DC")])
             
+            # Configurar tags para filas alternadas y estados
             self.tree.tag_configure('alternate', background=alternate_bg)
-            self.tree.tag_configure('ocupada', foreground='#ff9800' if current_mode == "Dark" else '#f57c00')
-            self.tree.tag_configure('disponible', foreground='#4caf50' if current_mode == "Dark" else '#2e7d32')
+            self.tree.tag_configure('status_Disponible', foreground="#22c55e")  # Verde
+            self.tree.tag_configure('status_Ocupada', foreground="#ef4444")    # Rojo
             
+            # Re-populating the tree is crucial for ttk styles to apply to items
             self.refresh_rooms()
             
+            # update_idletasks can help ensure Tkinter processes pending drawing tasks
             self.tree.update_idletasks()
             self.update_idletasks()
 
+# El diálogo no necesita cambios, pero lo incluyo por completitud
 class RoomDialog(ctk.CTkToplevel):
-    def __init__(self, parent, title, room_data=None, room_model=None):
+    def __init__(self, parent, title, room_data_for_dialog=None):
         super().__init__(parent)
         self.title(title)
-        self.geometry("400x250")
+        self.geometry("400x250") 
         self.transient(parent)
         self.grab_set()
-        self.lift()
+        self.lift() 
 
         self.result = None
-        self.room_model = room_model
-        self.editing = room_data is not None
-        self.original_code = room_data[0] if room_data else None
+        self.editing = room_data_for_dialog is not None
+        self.original_room_code = room_data_for_dialog[0] if self.editing else None
 
         main_frame = ctk.CTkFrame(self, fg_color="transparent")
         main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        ctk.CTkLabel(main_frame, text="Código:", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=8, sticky="w")
+        ctk.CTkLabel(main_frame, text="Código Interno:", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=8, sticky="w")
         self.codigo_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
         self.codigo_entry.grid(row=0, column=1, padx=5, pady=8, sticky="ew")
         
-        ctk.CTkLabel(main_frame, text="Nombre:", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=8, sticky="w")
+        ctk.CTkLabel(main_frame, text="Nombre de la Sala:", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=8, sticky="w")
         self.nombre_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
         self.nombre_entry.grid(row=1, column=1, padx=5, pady=8, sticky="ew")
-
+        
         main_frame.grid_columnconfigure(1, weight=1)
 
-        if room_data:
-            self.codigo_entry.insert(0, str(room_data[0]))
-            self.nombre_entry.insert(0, room_data[1])
+        if self.editing:
+            self.codigo_entry.insert(0, str(room_data_for_dialog[0]))
+            self.nombre_entry.insert(0, room_data_for_dialog[1])
         
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         button_frame.grid(row=2, column=0, columnspan=2, pady=(20,0), sticky="ew")
@@ -365,7 +390,7 @@ class RoomDialog(ctk.CTkToplevel):
         cancel_btn.pack(side="right", expand=True, padx=5)
 
         self.codigo_entry.focus_set()
-        self.wait_window(self)
+        self.wait_window(self) 
 
     def save(self):
         codigo = self.codigo_entry.get().strip()
@@ -374,27 +399,14 @@ class RoomDialog(ctk.CTkToplevel):
         if not codigo or not nombre:
             messagebox.showerror("Error de Validación", "Código y Nombre son obligatorios.", parent=self)
             return
-
-        success = False
+            
         if self.editing:
-            if self.original_code == codigo:
-                success = self.room_model.update_room(self.original_code, nombre)
-            else:
-                success = self.room_model.update_room(self.original_code, nombre, new_codigo=codigo)
-            action = "actualizada"
+            self.result = (self.original_room_code, nombre, codigo)
         else:
-            success = self.room_model.add_room(codigo, nombre)
-            action = "agregada"
-
-        if success:
-            messagebox.showinfo("Éxito", f"Sala {action} correctamente.", parent=self)
-            self.result = True
-            self.destroy()
-        else:
-            messagebox.showerror("Error de Base de Datos", 
-                               f"No se pudo {'actualizar' if self.editing else 'agregar'} la sala. El código podría ya existir.", 
-                               parent=self)
+            self.result = (codigo, nombre)
+        
+        self.destroy()
     
     def cancel(self):
         self.result = None
-        self.destroy() 
+        self.destroy()

@@ -12,7 +12,7 @@ class StudentsView(ctk.CTkFrame):
         
         # Configurar padding para el frame principal de la vista
         self.pack_propagate(False) # Evitar que los widgets hijos controlen el tamaño del frame principal
-        self.pack(padx=15, pady=15) # Padding general para la vista
+        self.pack(padx=15, pady=15, fill="both", expand=True) # Padding general para la vista
 
         # Vincular el cambio de tema
         self.bind("<<ThemeChanged>>", self.on_theme_change)
