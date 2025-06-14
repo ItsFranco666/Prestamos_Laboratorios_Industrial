@@ -1,5 +1,3 @@
-# In university_management/utils/validators.py
-import re
 from datetime import datetime
 
 def is_not_empty(value: str) -> bool:

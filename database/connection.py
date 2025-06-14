@@ -1,6 +1,4 @@
 import sqlite3
-# from datetime import datetime
-# import os
 
 class DatabaseManager:
     def __init__(self, db_path="uso_de_espacios.db"):
@@ -11,11 +9,11 @@ class DatabaseManager:
         return sqlite3.connect(self.db_path)
     
     def init_database(self):
-        """Initialize the database with the required schema"""
+        """ inicializar la base de datos si no esta creada """
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        # Create tables
+        # Creacion de tablas
         cursor.executescript('''
             -- Enable foreign key constraints
             PRAGMA foreign_keys = ON;
@@ -136,7 +134,7 @@ class DatabaseManager:
             );
         ''')
         
-        # Create triggers
+        # Triggers
         cursor.executescript('''
             -- Trigger for equipment loan to professors
             CREATE TRIGGER IF NOT EXISTS trg_prestamo_equipo_profesor
@@ -181,15 +179,14 @@ class DatabaseManager:
             END;
         ''')
         
-        # Insert some initial data if tables are empty
+        # Si las tablas estan vacias inserta datos iniciales
         self._insert_initial_data(cursor)
         
         conn.commit()
         conn.close()
     
     def _insert_initial_data(self, cursor):
-        """Insert initial data for testing"""
-        # Check if data already exists
+        # Comprueba que no hayan datos previos en la tabla de proyectos_curriculares
         cursor.execute("SELECT COUNT(*) FROM proyectos_curriculares")
         if cursor.fetchone()[0] == 0:
             cursor.executescript('''
@@ -212,10 +209,21 @@ class DatabaseManager:
                 ('Tecnología Electrónica'),
                 ('Almacén'),
                 ('Laboratorio de Ciencias Basicas');
-                
+            ''')
+        
+        # Sedes
+        cursor.execute("SELECT COUNT(*) FROM sedes")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
                 INSERT INTO sedes (nombre) VALUES 
                 ('Facultad Tecnológica');
-                
+            ''')
+        
+        # Personal de laboratorio (laboratoristas y monitores)
+        cursor.execute("SELECT COUNT(*) FROM personal_laboratorio")
+        if cursor.fetchone()[0] == 0:
+            # 1 para monitores, 0 para laboratoristas
+            cursor.executescript('''
                 INSERT INTO personal_laboratorio (nombre, cargo) VALUES 
                 ('Andres Felipe Franco Tellez', 1),
                 ('Evelyn Sofìa Cañon Sanchez', 1),
@@ -225,7 +233,12 @@ class DatabaseManager:
                 ('Wilfredo Ramirez Pretel', 0),
                 ('José Jesús Barajas Sotero', 0),
                 ('Valeria Pamplona Gutierrez', 0);
-                
+            ''')
+        
+        # Salas // Laboratorios
+        cursor.execute("SELECT COUNT(*) FROM salas")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''                
                 INSERT INTO salas (codigo_interno, nombre) VALUES 
                 ('320', 'FMS'),
                 ('317', 'HAS'),
