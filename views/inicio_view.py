@@ -10,7 +10,7 @@ from PIL import Image, ImageTk
 from .students_view import StudentsView
 from .profesores_view import ProfessorsView
 from .rooms_view import RoomsView
-# from .equipment_inventory import EquipmentInventoryView # Assuming these exist or will be added
+from .inventory_view import InventoryView
 # from .room_loans import RoomLoansView
 # from .equipment_loans import EquipmentLoansView
 from utils.font_config import get_font # Assuming utils is in PYTHONPATH or same level
@@ -183,21 +183,15 @@ class MainWindow(ctk.CTk):
         
     def show_room_view(self):
         self.clear_main_content()
-        # Assuming RoomView is correctly imported and defined
         rooms_view = RoomsView(self.main_frame)
         rooms_view.pack(fill="both", expand=True)
         return rooms_view
     
     def show_equipment_inventory(self):
         self.clear_main_content()
-        # Assuming EquipmentInventoryView exists
-        # from .equipment_inventory import EquipmentInventoryView
-        # inventory_view = EquipmentInventoryView(self.main_frame)
-        # inventory_view.pack(fill="both", expand=True)
-        # return inventory_view
-        label = ctk.CTkLabel(self.main_frame, text="Inventario Equipos - En desarrollo", font=get_font("title"))
-        label.pack(expand=True, padx=20, pady=20)
-        return label
+        inventory_view = InventoryView(self.main_frame)
+        inventory_view.pack(fill="both", expand=True)
+        return inventory_view
     
     def show_room_loans(self):
         self.clear_main_content()

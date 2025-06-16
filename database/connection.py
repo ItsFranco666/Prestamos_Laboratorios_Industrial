@@ -257,3 +257,119 @@ class DatabaseManager:
                 ('N/A', 'SISTEMAS DE POTENCIA '),
                 ('N/A', 'LABORATORIO CIENCIAS BASICAS');
             ''')
+
+        # Inventario
+        cursor.execute("SELECT COUNT(*) FROM inventario")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO inventario (codigo, marca_serie, documento_funcionario, nombre_funcionario, 
+                                      descripcion, contenido, estado, sede_id) VALUES 
+                ('EQ001', 'HP-2023-001', 12345678, 'Juan Pérez', 'Laptop HP ProBook', 'Laptop con Windows 11', 'DISPONIBLE', 1),
+                ('EQ002', 'DELL-2023-002', 87654321, 'María López', 'Laptop Dell Latitude', 'Laptop con Ubuntu', 'DISPONIBLE', 1),
+                ('EQ003', 'LEN-2023-003', 23456789, 'Carlos Ruiz', 'Laptop Lenovo ThinkPad', 'Laptop con Windows 10', 'EN USO', 1),
+                ('EQ004', 'MSI-2023-004', 34567890, 'Ana Martínez', 'Laptop MSI Gaming', 'Laptop con Windows 11', 'DAÑADO', 1),
+                ('EQ005', 'ASU-2023-005', 45678901, 'Pedro Gómez', 'Laptop Asus ZenBook', 'Laptop con Linux Mint', 'DISPONIBLE', 1),
+                ('EQ006', 'MAC-2023-006', 56789012, 'Laura Torres', 'MacBook Pro', 'Laptop con macOS', 'DISPONIBLE', 1),
+                ('EQ007', 'HP-2023-007', 67890123, 'Roberto Díaz', 'Laptop HP EliteBook', 'Laptop con Windows 11', 'EN USO', 1),
+                ('EQ008', 'DELL-2023-008', 78901234, 'Sofía Vargas', 'Laptop Dell XPS', 'Laptop con Ubuntu', 'DISPONIBLE', 1);
+            ''')
+
+        # Equipos
+        cursor.execute("SELECT COUNT(*) FROM equipos")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO equipos (codigo, sala_id, numero_equipo, descripcion, estado, observaciones) VALUES 
+                ('PC001', 1, 1, 'Computador de escritorio HP', 1, 'Equipo en buen estado'),
+                ('PC002', 1, 2, 'Computador de escritorio Dell', 1, 'Equipo en buen estado'),
+                ('PC003', 2, 1, 'Computador de escritorio Lenovo', 0, 'Equipo en mantenimiento'),
+                ('PC004', 2, 2, 'Computador de escritorio Asus', 1, 'Equipo en buen estado'),
+                ('PC005', 3, 1, 'Computador de escritorio MSI', 1, 'Equipo en buen estado'),
+                ('PC006', 3, 2, 'Computador de escritorio Acer', 0, 'Equipo en reparación'),
+                ('PC007', 4, 1, 'Computador de escritorio HP', 1, 'Equipo en buen estado'),
+                ('PC008', 4, 2, 'Computador de escritorio Dell', 1, 'Equipo en buen estado');
+            ''')
+
+        # Estudiantes
+        cursor.execute("SELECT COUNT(*) FROM estudiantes")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO estudiantes (codigo, nombre, cedula, proyecto_curricular_id) VALUES 
+                (2023001, 'Juan Carlos Rodríguez', 1001234567, 1),
+                (2023002, 'María Fernanda López', 1002345678, 2),
+                (2023003, 'Carlos Andrés Martínez', 1003456789, 3),
+                (2023004, 'Ana Sofía Gómez', 1004567890, 4),
+                (2023005, 'Pedro José Torres', 1005678901, 5),
+                (2023006, 'Laura Camila Vargas', 1006789012, 6),
+                (2023007, 'Roberto Alejandro Díaz', 1007890123, 7),
+                (2023008, 'Sofía Isabel Ruiz', 1008901234, 8);
+            ''')
+
+        # Profesores
+        cursor.execute("SELECT COUNT(*) FROM profesores")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO profesores (cedula, nombre, proyecto_curricular_id) VALUES 
+                (80012345, 'Dr. José Manuel Pérez', 1),
+                (80023456, 'Dra. María Elena Sánchez', 2),
+                (80034567, 'Dr. Carlos Eduardo Ramírez', 3),
+                (80045678, 'Dra. Ana Patricia Torres', 4),
+                (80056789, 'Dr. Pedro Antonio Gómez', 5),
+                (80067890, 'Dra. Laura Beatriz Martínez', 6),
+                (80078901, 'Dr. Roberto Carlos Díaz', 7),
+                (80089012, 'Dra. Sofía Alejandra Vargas', 8);
+            ''')
+
+        # Préstamos de salas a profesores
+        cursor.execute("SELECT COUNT(*) FROM prestamos_salas_profesores")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO prestamos_salas_profesores 
+                (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones) 
+                VALUES 
+                ('2024-03-15 08:00:00', 5, 1, 1, 80012345, '10:00:00', 80012345, 'Clase de laboratorio'),
+                ('2024-03-15 10:30:00', 6, 2, 2, 80023456, '12:30:00', 80023456, 'Práctica de estudiantes'),
+                ('2024-03-15 13:00:00', 7, 3, 3, 80034567, '15:00:00', 80034567, 'Investigación'),
+                ('2024-03-15 15:30:00', 8, 4, 4, 80045678, '17:30:00', 80045678, 'Trabajo de grado');
+            ''')
+
+        # Préstamos de salas a estudiantes
+        cursor.execute("SELECT COUNT(*) FROM prestamos_salas_estudiantes")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO prestamos_salas_estudiantes 
+                (fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, numero_equipo, firma_estudiante, novedad) 
+                VALUES 
+                ('2024-03-15 08:00:00', 5, 1, 1, 2023001, '10:00:00', 1, 2023001, NULL),
+                ('2024-03-15 10:30:00', 6, 2, 2, 2023002, '12:30:00', 2, 2023002, 'Equipo 2 con problemas de conexión'),
+                ('2024-03-15 13:00:00', 7, 3, 3, 2023003, '15:00:00', 1, 2023003, NULL),
+                ('2024-03-15 15:30:00', 8, 4, 4, 2023004, '17:30:00', 2, 2023004, NULL);
+            ''')
+
+        # Préstamos de equipos a profesores
+        cursor.execute("SELECT COUNT(*) FROM prestamos_equipos_profesores")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO prestamos_equipos_profesores 
+                (fecha_entrega, fecha_devolucion, laboratorista_entrega, monitor_entrega, 
+                equipo_codigo, profesor_id, sala_id, titulo_practica, estado, 
+                laboratorista_devolucion, monitor_devolucion, documento_devolvente, observaciones) 
+                VALUES 
+                ('2024-03-15 10:30:00', NULL, 6, 2, 'EQ002', 80023456, 2, 'Investigación de Tesis', 1, NULL, NULL, NULL, 'Préstamo activo'),
+                ('2024-03-15 13:00:00', '2024-03-15 15:00:00', 7, 3, 'EQ003', 80034567, 3, 'Laboratorio de Control', 0, 7, 3, 80034567, 'Equipo con fallas menores'),
+                ('2024-03-15 15:30:00', NULL, 8, 4, 'EQ004', 80045678, 4, 'Proyecto de Grado', 1, NULL, NULL, NULL, 'Préstamo activo');
+            ''')
+
+        # Préstamos de equipos a estudiantes
+        cursor.execute("SELECT COUNT(*) FROM prestamos_equipos_estudiantes")
+        if cursor.fetchone()[0] == 0:
+            cursor.executescript('''
+                INSERT INTO prestamos_equipos_estudiantes 
+                (fecha_entrega, fecha_devolucion, equipo_codigo, laboratorista_entrega, monitor_entrega,
+                estudiante_id, numero_estudiantes, sala_id, titulo_practica, estado,
+                laboratorista_devolucion, monitor_devolucion, documento_devolvente, observaciones) 
+                VALUES 
+                ('2024-03-15 08:00:00', '2024-03-15 10:00:00', 'EQ005', 5, 1, 2023001, 3, 1, 'Práctica de Laboratorio', 0, 5, 1, 2023001, 'Equipo devuelto correctamente'),
+                ('2024-03-15 10:30:00', NULL, 'EQ006', 6, 2, 2023002, 2, 2, 'Trabajo de Grado', 1, NULL, NULL, NULL, 'Préstamo activo'),
+                ('2024-03-15 13:00:00', '2024-03-15 15:00:00', 'EQ007', 7, 3, 2023003, 4, 3, 'Práctica de Electrónica', 0, 7, 3, 2023003, 'Equipo con daños menores'),
+                ('2024-03-15 15:30:00', NULL, 'EQ008', 8, 4, 2023004, 2, 4, 'Proyecto Final', 1, NULL, NULL, NULL, 'Préstamo activo');
+            ''')

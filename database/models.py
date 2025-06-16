@@ -545,12 +545,17 @@ class RoomLoanModel:
 class EquipmentLoanModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
+        self.inventory_model = InventoryModel()  # Agregamos referencia al modelo de inventario
 
     def add_loan_student(self, fecha_entrega, equipo_codigo, laboratorista_entrega_id, monitor_entrega_id,
                          estudiante_id, numero_estudiantes, sala_id, titulo_practica, observaciones):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
+            # Verificar si el equipo está disponible
+            if not self.inventory_model.check_equipment_availability(equipo_codigo):
+                return None
+
             # Estado: 1 for "En prestamo"
             cursor.execute('''
                 INSERT INTO prestamos_equipos_estudiantes
@@ -560,7 +565,10 @@ class EquipmentLoanModel:
             ''', (fecha_entrega, equipo_codigo, laboratorista_entrega_id, monitor_entrega_id, estudiante_id,
                   numero_estudiantes, sala_id, titulo_practica, observaciones))
             conn.commit()
-            # Trigger should update inventario.estado to 'EN USO'
+
+            # Actualizar el estado del equipo a 'EN USO'
+            self.inventory_model.update_equipment_status(equipo_codigo, 'EN USO')
+            
             return cursor.lastrowid 
         except sqlite3.Error as e:
             print(f"Error adding student equipment loan: {e}")
@@ -573,6 +581,10 @@ class EquipmentLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
+            # Verificar si el equipo está disponible
+            if not self.inventory_model.check_equipment_availability(equipo_codigo):
+                return None
+
             # Estado: 1 for "En prestamo"
             cursor.execute('''
                 INSERT INTO prestamos_equipos_profesores
@@ -582,7 +594,10 @@ class EquipmentLoanModel:
             ''', (fecha_entrega, equipo_codigo, laboratorista_entrega_id, monitor_entrega_id, profesor_id,
                   sala_id, titulo_practica, observaciones))
             conn.commit()
-            # Trigger should update inventario.estado to 'EN USO'
+
+            # Actualizar el estado del equipo a 'EN USO'
+            self.inventory_model.update_equipment_status(equipo_codigo, 'EN USO')
+            
             return cursor.lastrowid
         except sqlite3.Error as e:
             print(f"Error adding professor equipment loan: {e}")
@@ -667,6 +682,14 @@ class EquipmentLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
+            # Primero obtenemos el código del equipo
+            if loan_type == 'student':
+                cursor.execute('SELECT equipo_codigo FROM prestamos_equipos_estudiantes WHERE id = ?', (loan_id,))
+            else:
+                cursor.execute('SELECT equipo_codigo FROM prestamos_equipos_profesores WHERE id = ?', (loan_id,))
+            
+            equipo_codigo = cursor.fetchone()[0]
+
             # Estado: 0 for "Devuelto"
             if loan_type == 'student':
                 cursor.execute('''
@@ -686,8 +709,12 @@ class EquipmentLoanModel:
                       observaciones, documento_devolvente, loan_id))
             else:
                 return False
+
             conn.commit()
-            # Trigger should update inventario.estado to 'DISPONIBLE'
+
+            # Actualizar el estado del equipo a 'DISPONIBLE'
+            self.inventory_model.update_equipment_status(equipo_codigo, 'DISPONIBLE')
+            
             return True
         except sqlite3.Error as e:
             print(f"Error updating equipment loan return: {e}")
