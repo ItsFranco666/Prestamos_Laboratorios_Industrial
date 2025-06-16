@@ -8,7 +8,7 @@ from PIL import Image, ImageTk
 
 # Import views
 from .students_view import StudentsView
-from .profesores_view import ProfesorManagementView
+from .profesores_view import ProfessorsView
 from .rooms_view import RoomsView
 # from .equipment_inventory import EquipmentInventoryView # Assuming these exist or will be added
 # from .room_loans import RoomLoansView
@@ -177,7 +177,7 @@ class MainWindow(ctk.CTk):
 
     def show_professor_management(self):
         self.clear_main_content()
-        student_view = ProfesorManagementView(self.main_frame)
+        student_view = ProfessorsView(self.main_frame)
         student_view.pack(fill="both", expand=True)
         return student_view
         
