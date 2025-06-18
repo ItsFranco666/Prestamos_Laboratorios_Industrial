@@ -7,11 +7,12 @@ import sys
 from PIL import Image, ImageTk
 
 # Import views
+from .personal_view import PersonalView
 from .students_view import StudentsView
 from .profesores_view import ProfessorsView
 from .rooms_view import RoomsView
 from .inventory_view import InventoryView
-# from .room_loans import RoomLoansView
+# from .rooms_loans_view import RoomLoansView
 # from .equipment_loans import EquipmentLoansView
 from utils.font_config import get_font # Assuming utils is in PYTHONPATH or same level
 
@@ -41,6 +42,15 @@ class MainWindow(ctk.CTk):
         """Configura los estilos para ttk.Treeview de forma global."""
         if theme_mode is None:
             theme_mode = ctk.get_appearance_mode()
+        
+        # Si el tema es System, detectar el tema del sistema
+        if theme_mode == "System":
+            import darkdetect
+            try:
+                system_theme = "Dark" if darkdetect.isDark() else "Light"
+            except:
+                system_theme = "Light"  # Por defecto a Light si no se puede detectar
+            theme_mode = system_theme
 
         style = ttk.Style()
         style.theme_use("default")
@@ -91,6 +101,7 @@ class MainWindow(ctk.CTk):
         self.nav_buttons = {}
         nav_items = [
             ("Dashboard", self.show_dashboard, "dashboard_icon.png"),
+            ("Personal", self.show_personal, "personal_icon.png"),
             ("Estudiantes", self.show_students_view, "student_icon.png"),
             ("Profesores", self.show_professor_management, "professors_icon.png"),
             ("Salas", self.show_room_view, "rooms_icon.png"),
@@ -165,14 +176,18 @@ class MainWindow(ctk.CTk):
         self.clear_main_content()
         label = ctk.CTkLabel(self.main_frame, text="Dashboard - En desarrollo", font=get_font("title"))
         label.pack(expand=True, padx=20, pady=20)
-        # self.current_view should be set by switch_view after this returns
-        return label 
+        return label
+    
+    def show_personal(self):
+        self.clear_main_content()
+        personal_view = PersonalView(self.main_frame)
+        personal_view.pack(fill="both", expand=True)
+        return personal_view
 
     def show_students_view(self):
         self.clear_main_content()
         student_view = StudentsView(self.main_frame)
         student_view.pack(fill="both", expand=True)
-        # self.current_view should be set by switch_view after this returns
         return student_view
 
     def show_professor_management(self):
@@ -215,17 +230,30 @@ class MainWindow(ctk.CTk):
         label.pack(expand=True, padx=20, pady=20)
         return label
 
-        # --- MODIFICADO: Actualizar la gestión del cambio de tema ---
     def change_appearance_mode_event(self, new_appearance_mode: str):
         """Maneja el cambio de tema y asegura que la vista actual se actualice."""
         ctk.set_appearance_mode(new_appearance_mode)
         
         # Vuelve a aplicar los estilos ttk para el nuevo tema
-        self.setup_ttk_styles(theme_mode=ctk.get_appearance_mode())
+        self.setup_ttk_styles(theme_mode=new_appearance_mode)
         
-        # Notifica a la vista actual para que se redibuje si es necesario
-        if self.current_view and hasattr(self.current_view, 'on_theme_change'):
-            self.current_view.on_theme_change()
+        # Forzar la actualización de la vista actual
+        if self.current_view:
+            # Si la vista actual tiene un método on_theme_change, lo llamamos
+            if hasattr(self.current_view, 'on_theme_change'):
+                self.current_view.on_theme_change()
+            # Si la vista actual tiene un método refresh_*, lo llamamos
+            elif hasattr(self.current_view, 'refresh_students'):
+                self.current_view.refresh_students()
+            elif hasattr(self.current_view, 'refresh_professors'):
+                self.current_view.refresh_professors()
+            elif hasattr(self.current_view, 'refresh_rooms'):
+                self.current_view.refresh_rooms()
+            elif hasattr(self.current_view, 'refresh_inventory'):
+                self.current_view.refresh_inventory()
+            
+            # Forzar la actualización de la interfaz
+            self.current_view.update_idletasks()
 
     def set_app_icon(self):
         try:

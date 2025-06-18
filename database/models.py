@@ -397,14 +397,77 @@ class InventoryModel:
 class PersonalLaboratorioModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
-
-    def get_all_personal(self):
+    
+    def get_cargos(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id, nombre, CASE cargo WHEN 0 THEN 'Laboratorista' ELSE 'Monitor' END as cargo_nombre FROM personal_laboratorio ORDER BY nombre ASC")
         personal = cursor.fetchall()
         conn.close()
         return personal
+
+    def get_all_personal(self, search_term="", cargo_filter_name=""):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        
+        query = '''
+            SELECT id, nombre, cargo
+            FROM personal_laboratorio 
+            WHERE (CAST(id AS TEXT) LIKE ? OR nombre LIKE ?)
+        '''
+        params = [f'%{search_term}%', f'%{search_term}%']
+        
+        if cargo_filter_name and cargo_filter_name != "Todos":
+            query += " AND CASE cargo WHEN 0 THEN 'Laboratorista' ELSE 'Monitor' END = ?"
+            params.append(cargo_filter_name)
+        
+        query += " ORDER BY nombre ASC"
+        cursor.execute(query, params)
+        personal = cursor.fetchall()
+        conn.close()
+        return personal
+
+    def add_personal(self, nombre, cargo):
+        """Agrega un nuevo personal a la base de datos"""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("INSERT INTO personal_laboratorio (nombre, cargo) VALUES (?, ?)", (nombre, cargo))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error al agregar personal: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_personal(self, id, nombre, cargo):
+        """Actualiza los datos de un personal existente"""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE personal_laboratorio SET nombre = ?, cargo = ? WHERE id = ?", (nombre, cargo, id))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error al actualizar personal: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def delete_personal(self, id):
+        """Elimina un personal de la base de datos"""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM personal_laboratorio WHERE id = ?", (id,))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error al eliminar personal: {e}")
+            return False
+        finally:
+            conn.close()
 
     def get_laboratoristas(self):
         conn = self.db_manager.get_connection()
