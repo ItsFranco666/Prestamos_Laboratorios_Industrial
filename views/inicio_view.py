@@ -12,7 +12,7 @@ from .students_view import StudentsView
 from .profesores_view import ProfessorsView
 from .rooms_view import RoomsView
 from .inventory_view import InventoryView
-# from .rooms_loans_view import RoomLoansView
+from .rooms_loans_view import RoomLoansView
 # from .equipment_loans import EquipmentLoansView
 from utils.font_config import get_font # Assuming utils is in PYTHONPATH or same level
 
@@ -210,14 +210,9 @@ class MainWindow(ctk.CTk):
     
     def show_room_loans(self):
         self.clear_main_content()
-        # Assuming RoomLoansView exists
-        # from .room_loans import RoomLoansView
-        # room_loans_view = RoomLoansView(self.main_frame)
-        # room_loans_view.pack(fill="both", expand=True)
-        # return room_loans_view
-        label = ctk.CTkLabel(self.main_frame, text="Préstamos Salas - En desarrollo", font=get_font("title"))
-        label.pack(expand=True, padx=20, pady=20)
-        return label
+        room_loans_view = RoomLoansView(self.main_frame)
+        room_loans_view.pack(fill="both", expand=True)
+        return room_loans_view
     
     def show_equipment_loans(self):
         self.clear_main_content()
@@ -251,6 +246,8 @@ class MainWindow(ctk.CTk):
                 self.current_view.refresh_rooms()
             elif hasattr(self.current_view, 'refresh_inventory'):
                 self.current_view.refresh_inventory()
+            elif hasattr(self.current_view, 'refresh_loans'):
+                self.current_view.refresh_loans()
             
             # Forzar la actualización de la interfaz
             self.current_view.update_idletasks()

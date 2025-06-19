@@ -216,6 +216,25 @@ class RoomModel:
         rooms = cursor.fetchall()
         conn.close()
         return rooms
+    
+    def get_available_rooms_for_dropdown(self):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT s.id, s.nombre
+            FROM salas s
+            WHERE NOT EXISTS (
+                SELECT 1 FROM prestamos_salas_profesores psp
+                WHERE psp.sala_id = s.id AND psp.hora_salida IS NULL
+            ) AND NOT EXISTS (
+                SELECT 1 FROM prestamos_salas_estudiantes pse
+                WHERE pse.sala_id = s.id AND pse.hora_salida IS NULL
+            )
+            ORDER BY s.nombre ASC
+        ''')
+        rooms = cursor.fetchall()
+        conn.close()
+        return rooms
 
     def get_all_rooms_for_dropdown(self):
         conn = self.db_manager.get_connection()
@@ -523,16 +542,15 @@ class RoomLoanModel:
         finally:
             conn.close()
 
-    def get_room_loans(self, date_filter=None): # YYYY-MM-DD
+    def get_room_loans(self, date_filter=None):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        
         base_query_student = '''
             SELECT pse.id, 'Estudiante' as tipo_usuario, e.nombre as usuario_nombre, s.nombre as sala_nombre, 
                    pse.fecha_entrada, pse.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, pse.novedad as observaciones, pse.estudiante_id as usuario_id, 'student' as loan_type
             FROM prestamos_salas_estudiantes pse
             JOIN estudiantes e ON pse.estudiante_id = e.codigo
-            JOIN salas s ON pse.sala_id = s.codigo
+            JOIN salas s ON pse.sala_id = s.id
             LEFT JOIN personal_laboratorio pl_lab ON pse.laboratorista = pl_lab.id
             LEFT JOIN personal_laboratorio pl_mon ON pse.monitor = pl_mon.id
         '''
@@ -541,21 +559,30 @@ class RoomLoanModel:
                    psp.fecha_entrada, psp.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, psp.observaciones, psp.profesor_id as usuario_id, 'professor' as loan_type
             FROM prestamos_salas_profesores psp
             JOIN profesores p ON psp.profesor_id = p.cedula
-            JOIN salas s ON psp.sala_id = s.codigo
+            JOIN salas s ON psp.sala_id = s.id
             LEFT JOIN personal_laboratorio pl_lab ON psp.laboratorista = pl_lab.id
             LEFT JOIN personal_laboratorio pl_mon ON psp.monitor = pl_mon.id
         '''
         params = []
         if date_filter:
-            date_condition = " WHERE DATE(fecha_entrada) = ?"
-            base_query_student += date_condition
-            base_query_professor += date_condition
+            # Calificamos la columna `fecha_entrada` para evitar ambigüedades
+            base_query_student += " WHERE DATE(pse.fecha_entrada) = ?"
+            base_query_professor += " WHERE DATE(psp.fecha_entrada) = ?"
             params.extend([date_filter, date_filter])
         
-        query = f"({base_query_student}) UNION ALL ({base_query_professor}) ORDER BY fecha_entrada DESC"
+        # Se eliminaron los paréntesis externos en la consulta UNION para mayor compatibilidad
+        query = f"{base_query_student} UNION ALL {base_query_professor} ORDER BY fecha_entrada DESC"
         
-        cursor.execute(query, params)
-        loans = cursor.fetchall()
+        try:
+            cursor.execute(query, params)
+            loans = cursor.fetchall()
+        except sqlite3.OperationalError as e:
+            print("--- FAILED SQL QUERY ---")
+            print(f"Query: {query}")
+            print(f"Params: {params}")
+            print(f"Error: {e}")
+            raise e # Volver a lanzar la excepción para que el programa falle y muestre el error
+
         conn.close()
         return loans
 
@@ -579,22 +606,22 @@ class RoomLoanModel:
         conn.close()
         return details
 
-    def update_room_loan_exit(self, loan_id, loan_type, hora_salida, observaciones, firma=None, numero_equipo=None): # firma not used yet
+    def update_room_loan_exit(self, loan_id, loan_type, hora_salida, observaciones, firma=None, numero_equipo=None):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
             if loan_type == 'student':
                 cursor.execute('''
                     UPDATE prestamos_salas_estudiantes
-                    SET hora_salida = ?, novedad = ?, numero_equipo = ?
+                    SET hora_salida = ?, novedad = ?, firma_estudiante = ?
                     WHERE id = ?
-                ''', (hora_salida, observaciones, numero_equipo, loan_id))
+                ''', (hora_salida, observaciones, firma, loan_id))
             elif loan_type == 'professor':
                  cursor.execute('''
                     UPDATE prestamos_salas_profesores
-                    SET hora_salida = ?, observaciones = ?
+                    SET hora_salida = ?, observaciones = ?, firma_profesor = ?
                     WHERE id = ?
-                ''', (hora_salida, observaciones, loan_id))
+                ''', (hora_salida, observaciones, firma, loan_id))
             else:
                 return False
             conn.commit()
