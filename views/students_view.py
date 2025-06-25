@@ -412,18 +412,22 @@ class StudentDialog(ctk.CTkToplevel):
         cedula_str = self.cedula_entry.get().strip()
         proyecto_nombre_seleccionado = self.proyecto_combo.get()
 
-        # Validación de campos obligatorios.
-        if not codigo_str or not nombre or not cedula_str:
-            messagebox.showerror("Error de Validación", "Código, Nombre y Cédula son obligatorios.", parent=self)
-            return
-        
         # Validación de tipo de dato numérico.
         try:
             codigo = int(codigo_str)
-            cedula = int(cedula_str)
         except ValueError:
-            messagebox.showerror("Error de Validación", "Código y Cédula deben ser números enteros.", parent=self)
+            messagebox.showerror("Error de Validación", "El código debe ser un número entero.", parent=self)
             return
+        
+        # La cedula es originalmente cero por si no se define una en la creacion
+        cedula = 0
+        if cedula_str:
+            # Validación de tipo de dato numérico.
+            try:
+                cedula = int(codigo_str)
+            except ValueError:
+                messagebox.showerror("Error de Validación", "La cédula debe ser un número entero.", parent=self)
+                return
             
         # Obtiene el ID del proyecto a partir del nombre seleccionado.
         proyecto_id = None

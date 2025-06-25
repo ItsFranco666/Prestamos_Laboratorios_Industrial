@@ -271,7 +271,7 @@ class RoomsView(ctk.CTkFrame):
         dialog = RoomDialog(self, "Agregar Sala", room_model=self.room_model)
         # Si el diálogo se cerró guardando...
         if dialog.result:
-            codigo, nombre = dialog.result
+            codigo, nombre = dialog.result #type: ignore
             # Llama al modelo para agregar la nueva sala.
             self.room_model.add_room(codigo, nombre)
             # Refresca la tabla para mostrar el nuevo registro.
@@ -305,10 +305,11 @@ class RoomDialog(ctk.CTkToplevel):
         """
         super().__init__(parent)
         self.title(title) # Establece el título.
-        self.geometry("450x300") # Establece el tamaño.
+        self.geometry("550x200") # Establece el tamaño.
         self.transient(parent) # Hace que la ventana se mantenga sobre la principal.
         self.grab_set() # Captura todos los eventos, bloqueando la ventana principal.
         self.lift() # Asegura que la ventana esté al frente.
+        self._center_dialog()
 
         self.result = None # Almacenará los datos del formulario si se guarda.
         self.room_model = room_model 

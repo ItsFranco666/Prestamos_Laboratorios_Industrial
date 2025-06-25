@@ -13,7 +13,7 @@ from .profesores_view import ProfessorsView
 from .rooms_view import RoomsView
 from .inventory_view import InventoryView
 from .rooms_loans_view import RoomLoansView
-# from .equipment_loans import EquipmentLoansView
+from .equipment_loans_view import EquipmentLoansView
 from utils.font_config import get_font # Assuming utils is in PYTHONPATH or same level
 
 class MainWindow(ctk.CTk):
@@ -29,14 +29,26 @@ class MainWindow(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
         
-        # --- NUEVO: Configurar estilos ttk al inicio ---
+        # Configurar estilos ttk al inicio ---
         self.setup_ttk_styles()
         
         self.current_view = None
         self.create_sidebar()
         self.create_main_content_area()
         
+        # --- NUEVO: Inicializar detección de cambios de tema del sistema ---
+        self.last_system_theme = self.get_system_theme()
+        # self.check_system_theme_changes()
+        
         self.show_dashboard() # Default view
+    
+    def get_system_theme(self):
+        """Detecta el tema actual del sistema."""
+        try:
+            import darkdetect
+            return "Dark" if darkdetect.isDark() else "Light"
+        except:
+            return "Light"  # Por defecto a Light si no se puede detectar
     
     def setup_ttk_styles(self, theme_mode=None):
         """Configura los estilos para ttk.Treeview de forma global."""
@@ -101,13 +113,13 @@ class MainWindow(ctk.CTk):
         self.nav_buttons = {}
         nav_items = [
             ("Dashboard", self.show_dashboard, "dashboard_icon.png"),
-            ("Personal", self.show_personal, "personal_icon.png"),
+            ("Personal", self.show_personal, "student_icon.png"),
             ("Estudiantes", self.show_students_view, "student_icon.png"),
             ("Profesores", self.show_professor_management, "professors_icon.png"),
-            ("Salas", self.show_room_view, "rooms_icon.png"),
-            ("Inventario Equipos", self.show_equipment_inventory, "inventory_icon.png"),
-            ("Préstamos Salas", self.show_room_loans, "room_loan_icon.png"),
-            ("Préstamos Equipos", self.show_equipment_loans, "equip_loan_icon.png")
+            ("Salas", self.show_room_view, "student_icon.png"),
+            ("Inventario Equipos", self.show_equipment_inventory, "student_icon.png"),
+            ("Préstamos Salas", self.show_room_loans, "student_icon.png"),
+            ("Préstamos Equipos", self.show_equipment_loans, "student_icon.png")
         ]
         
         # Creacion de los botones del panel lateral
@@ -132,7 +144,7 @@ class MainWindow(ctk.CTk):
                     icon_image = Image.open(icon_path)
                     icon_photo = ImageTk.PhotoImage(icon_image)
                     btn.configure(image=icon_photo)
-                    btn.image = icon_photo  # Mantener una referencia
+                    btn.image = icon_photo  # type: ignore
             except Exception as e:
                 print(f"Error loading icon {icon_name}: {e}")
             
@@ -216,14 +228,9 @@ class MainWindow(ctk.CTk):
     
     def show_equipment_loans(self):
         self.clear_main_content()
-        # Assuming EquipmentLoansView exists
-        # from .equipment_loans import EquipmentLoansView
-        # equipment_loans_view = EquipmentLoansView(self.main_frame)
-        # equipment_loans_view.pack(fill="both", expand=True)
-        # return equipment_loans_view
-        label = ctk.CTkLabel(self.main_frame, text="Préstamos Equipos - En desarrollo", font=get_font("title"))
-        label.pack(expand=True, padx=20, pady=20)
-        return label
+        equipment_loans_view = EquipmentLoansView(self.main_frame)
+        equipment_loans_view.pack(fill="both", expand=True)
+        return equipment_loans_view
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         """Maneja el cambio de tema y asegura que la vista actual se actualice."""
@@ -256,7 +263,7 @@ class MainWindow(ctk.CTk):
         try:
             icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico")
             icon_path_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.png")
-
+            
             final_icon_path = None
             if sys.platform == "win32" and os.path.exists(icon_path_ico):
                 final_icon_path = icon_path_ico
@@ -269,7 +276,7 @@ class MainWindow(ctk.CTk):
                 else:
                     icon_image = Image.open(final_icon_path)
                     icon_photo = ImageTk.PhotoImage(icon_image)
-                    self.iconphoto(True, icon_photo)
+                    self.iconphoto(True, icon_photo) # type: ignore
             else:
                 print(f"Icon file not found. Searched: {icon_path_ico}, {icon_path_png}")
         except Exception as e:

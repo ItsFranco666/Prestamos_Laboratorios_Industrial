@@ -413,6 +413,29 @@ class InventoryModel:
         conn.close()
         return sedes
 
+    def check_equipment_availability(self, equipo_codigo):
+        """Verifica si un equipo está disponible para préstamo"""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT estado FROM inventario WHERE codigo = ?', (equipo_codigo,))
+        result = cursor.fetchone()
+        conn.close()
+        return result and result[0] == 'DISPONIBLE'
+
+    def update_equipment_status(self, equipo_codigo, nuevo_estado):
+        """Actualiza el estado de un equipo"""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE inventario SET estado = ? WHERE codigo = ?', (nuevo_estado, equipo_codigo))
+            conn.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f"Error updating equipment status: {e}")
+            return False
+        finally:
+            conn.close()
+
 class PersonalLaboratorioModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
@@ -699,7 +722,8 @@ class EquipmentLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
-        base_query_student = '''
+        # Primero obtener préstamos de estudiantes
+        student_query = '''
             SELECT pee.id, 'Estudiante' as tipo_usuario, e.nombre as usuario_nombre, inv.descripcion as equipo_desc,
                    pee.fecha_entrega, pee.fecha_devolucion, 
                    pl_ent.nombre as laboratorista_entrega, pm_ent.nombre as monitor_entrega,
@@ -714,7 +738,9 @@ class EquipmentLoanModel:
             LEFT JOIN personal_laboratorio pl_dev ON pee.laboratorista_devolucion = pl_dev.id
             LEFT JOIN personal_laboratorio pm_dev ON pee.monitor_devolucion = pm_dev.id
         '''
-        base_query_professor = '''
+        
+        # Luego obtener préstamos de profesores
+        professor_query = '''
             SELECT pep.id, 'Profesor' as tipo_usuario, p.nombre as usuario_nombre, inv.descripcion as equipo_desc,
                    pep.fecha_entrega, pep.fecha_devolucion,
                    pl_ent.nombre as laboratorista_entrega, pm_ent.nombre as monitor_entrega,
@@ -729,19 +755,36 @@ class EquipmentLoanModel:
             LEFT JOIN personal_laboratorio pl_dev ON pep.laboratorista_devolucion = pl_dev.id
             LEFT JOIN personal_laboratorio pm_dev ON pep.monitor_devolucion = pm_dev.id
         '''
-        params = []
-        if date_filter:
-            date_condition = " WHERE DATE(fecha_entrega) = ?" # Filter by delivery date
-            base_query_student += date_condition
-            base_query_professor += date_condition
-            params.extend([date_filter, date_filter])
-            
-        query = f"({base_query_student}) UNION ALL ({base_query_professor}) ORDER BY fecha_entrega DESC"
         
-        cursor.execute(query, params)
-        loans = cursor.fetchall()
+        # Aplicar filtro de fecha si se proporciona
+        if date_filter:
+            student_query += " WHERE DATE(pee.fecha_entrega) = ?"
+            professor_query += " WHERE DATE(pep.fecha_entrega) = ?"
+        
+        # Ejecutar consultas por separado y combinar resultados
+        all_loans = []
+        
+        # Ejecutar consulta de estudiantes
+        if date_filter:
+            cursor.execute(student_query, [date_filter])
+        else:
+            cursor.execute(student_query)
+        student_loans = cursor.fetchall()
+        all_loans.extend(student_loans)
+        
+        # Ejecutar consulta de profesores
+        if date_filter:
+            cursor.execute(professor_query, [date_filter])
+        else:
+            cursor.execute(professor_query)
+        professor_loans = cursor.fetchall()
+        all_loans.extend(professor_loans)
+        
+        # Ordenar por fecha de entrega descendente
+        all_loans.sort(key=lambda x: x[4] if x[4] else '', reverse=True)
+        
         conn.close()
-        return loans
+        return all_loans
 
     def get_equipment_loan_details(self, loan_id, loan_type):
         conn = self.db_manager.get_connection()

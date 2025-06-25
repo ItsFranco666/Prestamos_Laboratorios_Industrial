@@ -26,7 +26,8 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS salas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 codigo_interno TEXT,
-                nombre TEXT NOT NULL
+                nombre TEXT NOT NULL,
+                estado TEXT NOT NULL DEFAULT 'DISPONIBLE' CHECK (estado IN ('DISPONIBLE', 'OCUPADA'))
             );
             
             CREATE TABLE IF NOT EXISTS sedes (
@@ -42,8 +43,8 @@ class DatabaseManager:
             
             CREATE TABLE IF NOT EXISTS estudiantes (
                 codigo INTEGER PRIMARY KEY,
-                nombre TEXT NOT NULL,
-                cedula INTEGER NOT NULL UNIQUE,
+                nombre TEXT,
+                cedula INTEGER UNIQUE,
                 proyecto_curricular_id INTEGER REFERENCES proyectos_curriculares(id)
             );
             
@@ -327,9 +328,15 @@ class DatabaseManager:
                 (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones) 
                 VALUES 
                 ('2024-03-15 08:00:00', 5, 1, 1, 80012345, '10:00:00', 80012345, 'Clase de laboratorio'),
-                ('2024-03-15 10:30:00', 6, 2, 2, 80023456, '12:30:00', 80023456, 'Práctica de estudiantes'),
-                ('2024-03-15 13:00:00', 7, 3, 3, 80034567, '15:00:00', 80034567, 'Investigación'),
-                ('2024-03-15 15:30:00', 8, 4, 4, 80045678, '17:30:00', 80045678, 'Trabajo de grado');
+                ('2024-03-15 10:30:00', 6, 2, 2, 80023456, '12:30:00', 80023456, 'Práctica de estudiantes');
+            ''')
+            
+            cursor.executescript('''
+                INSERT INTO prestamos_salas_profesores 
+                (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, observaciones) 
+                VALUES 
+                ('2024-03-15 13:00:00', 7, 3, 3, 80034567, 'Investigación'),
+                ('2024-03-15 15:30:00', 8, 4, 4, 80045678, 'Trabajo de grado');
             ''')
 
         # Préstamos de salas a estudiantes
