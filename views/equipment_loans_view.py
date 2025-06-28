@@ -7,7 +7,10 @@ from datetime import datetime
 class EquipmentLoansView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
-        self.pack(fill="both", expand=True)
+        
+        # Configurar padding para el frame principal de la vista
+        self.pack_propagate(False) # Evitar que los widgets hijos controlen el tamaño del frame principal
+        self.pack(padx=15, pady=15, fill="both", expand=True) # Padding general para la vista
 
         # Inicializar modelos
         self.equipment_loan_model = EquipmentLoanModel()
@@ -23,17 +26,17 @@ class EquipmentLoansView(ctk.CTkFrame):
     def setup_ui(self):
         # Frame para los botones de navegación de la vista
         self.nav_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.nav_frame.pack(pady=10, padx=20, fill="x")
+        self.nav_frame.pack(pady=(0, 15), padx=0, fill="x")
 
         self.new_loan_btn = ctk.CTkButton(self.nav_frame, text="Nuevo Préstamo", command=self._show_new_loan_view, font=get_font("normal", "bold"))
-        self.new_loan_btn.pack(side="left", padx=5)
+        self.new_loan_btn.pack(side="left", padx=(0, 5))
 
         self.history_btn = ctk.CTkButton(self.nav_frame, text="Historial de Préstamos", command=self._show_history_view, font=get_font("normal", "bold"))
         self.history_btn.pack(side="left", padx=5)
 
         # Frame principal para el contenido
         self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.content_frame.pack(pady=10, padx=20, fill="both", expand=True)
+        self.content_frame.pack(fill="both", expand=True, padx=0, pady=0)
     
     def _clear_content_frame(self):
         for widget in self.content_frame.winfo_children():
@@ -44,15 +47,17 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.new_loan_btn.configure(fg_color=("#ffa154", "#c95414"))
         self.history_btn.configure(fg_color=("gray70", "gray30"))
 
+        # Título independiente del formulario (similar a StudentsView)
+        title = ctk.CTkLabel(self.content_frame, text="Registrar Nuevo Préstamo de Equipo", font=get_font("title", "bold"))
+        title.pack(pady=(10, 20))
+
+        # Frame del formulario con marco
         form_frame = ctk.CTkFrame(self.content_frame)
-        form_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        title = ctk.CTkLabel(form_frame, text="Registrar Nuevo Préstamo de Equipo", font=get_font("title", "bold"))
-        title.pack(anchor="w", pady=(0, 20))
+        form_frame.pack(fill="both", expand=True, padx=0, pady=(0, 10))
 
         # --- Formulario ---
         form_grid = ctk.CTkFrame(form_frame, fg_color="transparent")
-        form_grid.pack(fill="x", expand=True)
+        form_grid.pack(fill="x", expand=True, padx=20, pady=20)
         form_grid.columnconfigure(1, weight=1)
 
         # Tipo de usuario
@@ -172,30 +177,30 @@ class EquipmentLoansView(ctk.CTkFrame):
             messagebox.showerror("Error en Base de Datos", "No se pudo registrar el préstamo de equipo.", parent=self)
 
     def _show_history_view(self):
+        # ... (la configuración de la tabla y los scrollbars es la misma que en la respuesta anterior) ...
         self._clear_content_frame()
         self.history_btn.configure(fg_color=("#ffa154", "#c95414"))
         self.new_loan_btn.configure(fg_color=("gray70", "gray30"))
-
-        # --- Tabla de historial ---
-        table_container = ctk.CTkFrame(self.content_frame)
-        table_container.pack(fill="both", expand=True, padx=0, pady=10)
-
-        columns = ("tipo_usuario", "usuario_nombre", "equipo_desc", "fecha_entrega", "fecha_devolucion", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "estado_prestamo", "observaciones")
-        self.tree = ttk.Treeview(table_container, columns=columns, show="headings", style="Modern.Treeview")
-        
-        # Cabeceras
-        self.tree.heading("tipo_usuario", text="Tipo Usuario", anchor='w')
-        self.tree.heading("usuario_nombre", text="Nombre Usuario", anchor='w')
-        self.tree.heading("equipo_desc", text="Equipo", anchor='w')
-        self.tree.heading("fecha_entrega", text="Fecha Entrega", anchor='w')
-        self.tree.heading("fecha_devolucion", text="Fecha Devolución", anchor='w')
-        self.tree.heading("titulo_practica", text="Título Práctica", anchor='w')
-        self.tree.heading("laboratorista_entrega", text="Laboratorista Entrega", anchor='w')
-        self.tree.heading("monitor_entrega", text="Monitor Entrega", anchor='w')
-        self.tree.heading("estado_prestamo", text="Estado", anchor='w')
-        self.tree.heading("observaciones", text="Observaciones", anchor='w')
-
-        # Columnas
+        title = ctk.CTkLabel(self.content_frame, text="Historial de Préstamos de Equipos", font=get_font("title", "bold"))
+        title.pack(pady=(10, 20))
+        table_main_container = ctk.CTkFrame(self.content_frame, corner_radius=8, border_width=1, border_color=("gray80", "gray20"))
+        table_main_container.pack(fill="both", expand=True, pady=(0, 10), padx=0)
+        table_container_frame = ctk.CTkFrame(table_main_container, corner_radius=15, fg_color=("white", "gray15"))
+        table_container_frame.pack(fill="both", expand=True, padx=8, pady=8)
+        columns = ("tipo_usuario", "usuario_nombre", "equipo_desc", "fecha_entrega", "fecha_devolucion", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "laboratorista_devolucion", "monitor_devolucion", "estado_prestamo", "observaciones")
+        self.tree = ttk.Treeview(table_container_frame, columns=columns, show="headings", style="Modern.Treeview")
+        self.tree.heading("tipo_usuario", text="👤 Tipo Usuario", anchor='w')
+        self.tree.heading("usuario_nombre", text="👨‍💼 Nombre Usuario", anchor='w')
+        self.tree.heading("equipo_desc", text="🔧 Equipo", anchor='w')
+        self.tree.heading("fecha_entrega", text="📅 Fecha Entrega", anchor='w')
+        self.tree.heading("fecha_devolucion", text="📅 Fecha Devolución", anchor='w')
+        self.tree.heading("titulo_practica", text="📋 Título Práctica", anchor='w')
+        self.tree.heading("laboratorista_entrega", text="👨‍🔬 Lab. Entrega", anchor='w')
+        self.tree.heading("monitor_entrega", text="👥 Monitor Entrega", anchor='w')
+        self.tree.heading("laboratorista_devolucion", text="👨‍🔬 Lab. Devolución", anchor='w')
+        self.tree.heading("monitor_devolucion", text="👥 Monitor Devolución", anchor='w')
+        self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
+        self.tree.heading("observaciones", text="📝 Observaciones", anchor='w')
         self.tree.column("tipo_usuario", width=100, stretch=False)
         self.tree.column("usuario_nombre", width=150)
         self.tree.column("equipo_desc", width=200)
@@ -204,28 +209,27 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.column("titulo_practica", width=200)
         self.tree.column("laboratorista_entrega", width=150)
         self.tree.column("monitor_entrega", width=150)
+        self.tree.column("laboratorista_devolucion", width=150)
+        self.tree.column("monitor_devolucion", width=150)
         self.tree.column("estado_prestamo", width=100)
-        self.tree.column("observaciones", width=200)
-
-        self.tree.pack(side="left", fill="both", expand=True, padx=(0, 5))
-        
-        # Scrollbars
-        v_scroll = ctk.CTkScrollbar(table_container, command=self.tree.yview)
-        v_scroll.pack(side="right", fill="y")
-        h_scroll = ctk.CTkScrollbar(table_container, command=self.tree.xview, orientation="horizontal")
-        h_scroll.pack(side="bottom", fill="x")
+        self.tree.column("observaciones", width=300)
+        self.tree.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        v_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.yview, corner_radius=8, width=12)
+        v_scroll.pack(side="right", fill="y", pady=5, padx=(0, 5))
+        h_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.xview, orientation="horizontal", corner_radius=8, height=12)
+        h_scroll.pack(side="bottom", fill="x", padx=5, pady=(0, 5))
         self.tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
-
         self._populate_history_treeview()
-        
-        # --- Botones de acción ---
-        actions_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
-        actions_frame.pack(fill="x", pady=10)
-        
-        self.return_btn = ctk.CTkButton(actions_frame, text="Registrar Devolución", command=self._return_selected_equipment, state="disabled", font=get_font("normal"))
-        self.return_btn.pack(side="left")
-
+        self.actions_frame = ctk.CTkFrame(self.content_frame, corner_radius=12)
+        self.actions_frame.pack(pady=(15, 0), padx=0, fill="x")
+        self.return_btn = ctk.CTkButton(self.actions_frame, text="Registrar Devolución", command=self._return_selected_equipment, state="disabled", font=get_font("normal"), corner_radius=8, height=35)
+        self.return_btn.pack(side="left", padx=8, pady=8)
+        self.edit_btn = ctk.CTkButton(self.actions_frame, text="Editar Préstamo", command=self._edit_selected_loan, state="disabled", font=get_font("normal"), corner_radius=8, height=35)
+        self.edit_btn.pack(side="left", padx=8, pady=8)
+        self.delete_btn = ctk.CTkButton(self.actions_frame, text="Eliminar Préstamo", command=self._delete_selected_loan, state="disabled", fg_color=("#b3261e", "#e4675f"), hover_color=("#8b1e17", "#b8514a"), font=get_font("normal"), corner_radius=8, height=35)
+        self.delete_btn.pack(side="left", padx=8, pady=8)
         self.tree.bind("<<TreeviewSelect>>", self._on_loan_select)
+        self._on_loan_select()
 
     def _populate_history_treeview(self):
         for item in self.tree.get_children():
@@ -233,22 +237,25 @@ class EquipmentLoansView(ctk.CTkFrame):
         
         loans = self.equipment_loan_model.get_equipment_loans()
         
-        self.tree.tag_configure('active_loan', foreground=("#f59e0b"))
+        current_mode = ctk.get_appearance_mode()
+        tag_config = {'active_loan': ("#f59e0b",), 'alternate': ('#323232',) if current_mode == "Dark" else ('#f8f9fa',)}
+        self.tree.tag_configure('active_loan', foreground=tag_config['active_loan'][0])
+        self.tree.tag_configure('alternate', background=tag_config['alternate'][0])
 
-        for loan in loans:
-            loan_id, tipo, nombre, equipo_desc, f_entrega, f_devolucion, lab_ent, mon_ent, lab_dev, mon_dev, titulo_practica, estado_prestamo, obs, user_id, loan_type, equipo_codigo = loan
+        for i, loan in enumerate(loans):
+            # Se añade sala_id al desempaquetado
+            loan_id, tipo, nombre, equipo_desc, f_entrega, f_devolucion, lab_ent, mon_ent, lab_dev, mon_dev, titulo_practica, estado_prestamo, obs, user_id, loan_type, equipo_codigo, sala_id = loan
             
-            # Formatear datos
-            fecha_entrega_dt = datetime.fromisoformat(f_entrega)
-            f_entrega_str = fecha_entrega_dt.strftime('%Y-%m-%d %H:%M')
-            f_devolucion_str = f_devolucion if f_devolucion else "PENDIENTE"
+            f_entrega_str = datetime.fromisoformat(f_entrega).strftime('%Y-%m-%d %H:%M') if f_entrega else 'N/A'
+            f_devolucion_str = datetime.fromisoformat(f_devolucion).strftime('%Y-%m-%d %H:%M') if f_devolucion else "PENDIENTE"
             
             values = (tipo, nombre, equipo_desc, f_entrega_str, f_devolucion_str, titulo_practica, 
-                     lab_ent or 'N/A', mon_ent or 'N/A', estado_prestamo, obs or '')
+                      lab_ent or 'N/A', mon_ent or 'N/A', lab_dev or 'N/A', mon_dev or 'N/A', 
+                      estado_prestamo, obs or '')
             
-            tags = ()
+            tags = ('alternate',) if i % 2 == 1 else ()
             if estado_prestamo == 'En Préstamo':
-                tags = ('active_loan',)
+                tags += ('active_loan',)
             
             self.tree.insert("", "end", iid=f"{loan_type}_{loan_id}", values=values, tags=tags)
         
@@ -256,13 +263,28 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.loan_data = {f"{loan[14]}_{loan[0]}": loan for loan in loans}
 
     def _on_loan_select(self, event=None):
+        # --- MODIFICADO --- Actualiza el estado de los tres botones
         selected_iid = self.tree.focus()
+        
         if not selected_iid:
             self.return_btn.configure(state="disabled")
+            self.edit_btn.configure(state="disabled")
+            self.delete_btn.configure(state="disabled")
             return
         
         loan_details = self.loan_data.get(selected_iid)
-        if loan_details and loan_details[11] == 'En Préstamo': # Si estado_prestamo es 'En Préstamo'
+        if not loan_details:
+            self.return_btn.configure(state="disabled")
+            self.edit_btn.configure(state="disabled")
+            self.delete_btn.configure(state="disabled")
+            return
+
+        # Habilitar editar y eliminar para cualquier préstamo seleccionado
+        self.edit_btn.configure(state="normal")
+        self.delete_btn.configure(state="normal")
+        
+        # Habilitar "Registrar Devolución" solo si el préstamo está activo
+        if loan_details[11] == 'En Préstamo': # estado_prestamo
             self.return_btn.configure(state="normal")
         else:
             self.return_btn.configure(state="disabled")
@@ -278,7 +300,40 @@ class EquipmentLoansView(ctk.CTkFrame):
 
         dialog = EquipmentReturnDialog(self, "Registrar Devolución de Equipo", loan_details)
         if dialog.result:
-            self.refresh_loans() # Recargar la lista de préstamos
+            self.refresh_loans()
+
+    # Placeholder para la función de edición
+    def _edit_selected_loan(self):
+        selected_iid = self.tree.focus()
+        if not selected_iid or not (loan_details := self.loan_data.get(selected_iid)):
+            messagebox.showwarning("Sin selección", "Por favor, seleccione un préstamo para editar.", parent=self)
+            return
+        
+        # Abrir el nuevo diálogo de edición
+        dialog = EquipmentEditDialog(self, "Editar Préstamo de Equipo", loan_details, self.equipment_loan_model, self.room_model)
+        if dialog.result:
+            self.refresh_loans() # Recargar la lista si la edición fue exitosa
+            
+    # Función para eliminar el préstamo seleccionado
+    def _delete_selected_loan(self):
+        selected_iid = self.tree.focus()
+        if not selected_iid or not (loan_details := self.loan_data.get(selected_iid)):
+            messagebox.showwarning("Sin selección", "Por favor, seleccione un préstamo para eliminar.", parent=self)
+            return
+            
+        loan_id = loan_details[0]
+        loan_type = loan_details[14]
+
+        if messagebox.askyesno("Confirmar Eliminación", 
+                               f"¿Está seguro de que desea eliminar permanentemente el préstamo ID: {loan_id}?\nEsta acción no se puede deshacer.",
+                               parent=self, icon=messagebox.WARNING):
+            
+            success = self.equipment_loan_model.delete_loan(loan_id, loan_type)
+            if success:
+                messagebox.showinfo("Éxito", "El préstamo ha sido eliminado correctamente.", parent=self)
+                self.refresh_loans()
+            else:
+                messagebox.showerror("Error", "No se pudo eliminar el préstamo de la base de datos.", parent=self)
     
     def refresh_loans(self):
         if hasattr(self, 'tree'):
@@ -286,8 +341,10 @@ class EquipmentLoansView(ctk.CTkFrame):
             self._on_loan_select()
             self.update_idletasks()
 
-    def on_theme_change(self):
-        self.refresh_loans()
+    def on_theme_change(self, event=None):
+        if hasattr(self, 'tree'):
+            self.refresh_loans()
+            self.update_idletasks()
 
 class EquipmentReturnDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, loan_data):
@@ -390,4 +447,88 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
 
     def cancel(self):
         self.result = None
-        self.destroy() 
+        self.destroy()
+
+# Diálogo para editar un préstamo
+class EquipmentEditDialog(ctk.CTkToplevel):
+    def __init__(self, parent, title, loan_data, loan_model, room_model):
+        super().__init__(parent)
+        self.title(title)
+        self.geometry("500x350")
+        self.transient(parent)
+        self.grab_set()
+        self.lift()
+
+        self.loan_data = loan_data
+        self.loan_model = loan_model
+        self.room_model = room_model
+        self.result = None
+
+        main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        main_frame.pack(expand=True, fill="both", padx=20, pady=20)
+        main_frame.columnconfigure(1, weight=1)
+
+        # Título de la práctica
+        ctk.CTkLabel(main_frame, text="Título de la Práctica:", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=10, sticky="w")
+        self.titulo_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
+        self.titulo_entry.insert(0, self.loan_data[10]) # titulo_practica
+        self.titulo_entry.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
+
+        # Sala
+        ctk.CTkLabel(main_frame, text="Sala:", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=10, sticky="w")
+        self.salas_data = self.room_model.get_all_rooms_for_dropdown()
+        sala_names = [s[1] for s in self.salas_data]
+        self.sala_combo = ctk.CTkComboBox(main_frame, values=sala_names, font=get_font("normal"), state="readonly")
+        
+        # Encontrar y seleccionar la sala actual
+        current_sala_id = self.loan_data[16] # sala_id
+        current_sala_name = next((s[1] for s in self.salas_data if s[0] == current_sala_id), sala_names[0] if sala_names else "")
+        self.sala_combo.set(current_sala_name)
+        self.sala_combo.grid(row=1, column=1, padx=5, pady=10, sticky="ew")
+
+        # Observaciones
+        ctk.CTkLabel(main_frame, text="Observaciones:", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="nw")
+        self.obs_textbox = ctk.CTkTextbox(main_frame, height=100, font=get_font("normal"))
+        self.obs_textbox.insert("1.0", self.loan_data[12] or "") # observaciones
+        self.obs_textbox.grid(row=2, column=1, padx=5, pady=10, sticky="ew")
+
+        # Botones
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.grid(row=3, column=0, columnspan=2, pady=20, sticky="ew")
+        save_btn = ctk.CTkButton(button_frame, text="Guardar Cambios", command=self.save, font=get_font("normal"))
+        save_btn.pack(side="left", expand=True, padx=5)
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
+        cancel_btn.pack(side="right", expand=True, padx=5)
+        
+        self.wait_window(self)
+
+    def save(self):
+        new_titulo = self.titulo_entry.get().strip()
+        new_sala_nombre = self.sala_combo.get()
+        new_observaciones = self.obs_textbox.get("1.0", "end-1c").strip()
+
+        if not new_titulo:
+            messagebox.showerror("Error de Validación", "El título de la práctica no puede estar vacío.", parent=self)
+            return
+        
+        # Obtener el ID de la sala seleccionada
+        new_sala_id = next((s[0] for s in self.salas_data if s[1] == new_sala_nombre), None)
+        if new_sala_id is None:
+            messagebox.showerror("Error de Validación", "Debe seleccionar una sala válida.", parent=self)
+            return
+
+        loan_id = self.loan_data[0]
+        loan_type = self.loan_data[14]
+
+        success = self.loan_model.update_equipment_loan(loan_id, loan_type, new_titulo, new_sala_id, new_observaciones)
+        
+        if success:
+            self.result = True
+            messagebox.showinfo("Éxito", "El préstamo ha sido actualizado correctamente.", parent=self.master)
+            self.destroy()
+        else:
+            messagebox.showerror("Error", "No se pudo actualizar el préstamo en la base de datos.", parent=self)
+
+    def cancel(self):
+        self.result = None
+        self.destroy()
