@@ -5,13 +5,16 @@ import os
 import traceback
 import logging
 from datetime import datetime
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer # type: ignore
+from watchdog.events import FileSystemEventHandler # type: ignore
+import threading
 
 class ReloadHandler(FileSystemEventHandler):
     def __init__(self, script_path):
         self.script_path = script_path
         self.process = None
+        self.stdout_thread = None
+        self.stderr_thread = None
         self.restart_app()
     
     def on_modified(self, event):
@@ -24,6 +27,14 @@ class ReloadHandler(FileSystemEventHandler):
             time.sleep(0.5)  # Pequeña pausa para asegurar que el archivo se ha guardado completamente
             self.restart_app()
     
+    def _stream_output(self, stream, prefix=""):
+        try:
+            for line in iter(stream.readline, ''):
+                if line:
+                    print(f"{prefix}{line}", end='')
+        except Exception as e:
+            print(f"❌ Error leyendo salida del proceso: {e}")
+
     def restart_app(self):
         # Terminar el proceso anterior si existe
         if self.process and self.process.poll() is None:
@@ -49,6 +60,11 @@ class ReloadHandler(FileSystemEventHandler):
                 universal_newlines=True,
                 bufsize=1
             )
+            # Lanzar hilos para mostrar stdout y stderr en tiempo real
+            self.stdout_thread = threading.Thread(target=self._stream_output, args=(self.process.stdout, ""), daemon=True)
+            self.stderr_thread = threading.Thread(target=self._stream_output, args=(self.process.stderr, "[ERR] "), daemon=True)
+            self.stdout_thread.start()
+            self.stderr_thread.start()
         except Exception as e:
             print(f"❌ Error al iniciar la aplicación: {e}")
 
