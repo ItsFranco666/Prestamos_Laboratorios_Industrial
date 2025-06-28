@@ -722,14 +722,13 @@ class EquipmentLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
-        # Primero obtener préstamos de estudiantes
         student_query = '''
             SELECT pee.id, 'Estudiante' as tipo_usuario, e.nombre as usuario_nombre, inv.descripcion as equipo_desc,
                    pee.fecha_entrega, pee.fecha_devolucion, 
                    pl_ent.nombre as laboratorista_entrega, pm_ent.nombre as monitor_entrega,
                    pl_dev.nombre as laboratorista_devolucion, pm_dev.nombre as monitor_devolucion,
                    pee.titulo_practica, CASE pee.estado WHEN 1 THEN 'En Préstamo' ELSE 'Devuelto' END as estado_prestamo,
-                   pee.observaciones, pee.estudiante_id as usuario_id, 'student' as loan_type, pee.equipo_codigo
+                   pee.observaciones, pee.estudiante_id as usuario_id, 'student' as loan_type, pee.equipo_codigo, pee.sala_id
             FROM prestamos_equipos_estudiantes pee
             JOIN estudiantes e ON pee.estudiante_id = e.codigo
             JOIN inventario inv ON pee.equipo_codigo = inv.codigo
@@ -739,14 +738,13 @@ class EquipmentLoanModel:
             LEFT JOIN personal_laboratorio pm_dev ON pee.monitor_devolucion = pm_dev.id
         '''
         
-        # Luego obtener préstamos de profesores
         professor_query = '''
             SELECT pep.id, 'Profesor' as tipo_usuario, p.nombre as usuario_nombre, inv.descripcion as equipo_desc,
                    pep.fecha_entrega, pep.fecha_devolucion,
                    pl_ent.nombre as laboratorista_entrega, pm_ent.nombre as monitor_entrega,
                    pl_dev.nombre as laboratorista_devolucion, pm_dev.nombre as monitor_devolucion,
                    pep.titulo_practica, CASE pep.estado WHEN 1 THEN 'En Préstamo' ELSE 'Devuelto' END as estado_prestamo,
-                   pep.observaciones, pep.profesor_id as usuario_id, 'professor' as loan_type, pep.equipo_codigo
+                   pep.observaciones, pep.profesor_id as usuario_id, 'professor' as loan_type, pep.equipo_codigo, pep.sala_id
             FROM prestamos_equipos_profesores pep
             JOIN profesores p ON pep.profesor_id = p.cedula
             JOIN inventario inv ON pep.equipo_codigo = inv.codigo
@@ -756,31 +754,17 @@ class EquipmentLoanModel:
             LEFT JOIN personal_laboratorio pm_dev ON pep.monitor_devolucion = pm_dev.id
         '''
         
-        # Aplicar filtro de fecha si se proporciona
         if date_filter:
             student_query += " WHERE DATE(pee.fecha_entrega) = ?"
             professor_query += " WHERE DATE(pep.fecha_entrega) = ?"
         
-        # Ejecutar consultas por separado y combinar resultados
         all_loans = []
+        params = [date_filter] if date_filter else []
+        cursor.execute(student_query, params)
+        all_loans.extend(cursor.fetchall())
+        cursor.execute(professor_query, params)
+        all_loans.extend(cursor.fetchall())
         
-        # Ejecutar consulta de estudiantes
-        if date_filter:
-            cursor.execute(student_query, [date_filter])
-        else:
-            cursor.execute(student_query)
-        student_loans = cursor.fetchall()
-        all_loans.extend(student_loans)
-        
-        # Ejecutar consulta de profesores
-        if date_filter:
-            cursor.execute(professor_query, [date_filter])
-        else:
-            cursor.execute(professor_query)
-        professor_loans = cursor.fetchall()
-        all_loans.extend(professor_loans)
-        
-        # Ordenar por fecha de entrega descendente
         all_loans.sort(key=lambda x: x[4] if x[4] else '', reverse=True)
         
         conn.close()
@@ -809,7 +793,63 @@ class EquipmentLoanModel:
         details = cursor.fetchone()
         conn.close()
         return details
+    
+    # Metodo para actualizar un prestamo
+    def update_equipment_loan(self, loan_id, loan_type, titulo_practica, sala_id, observaciones):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        table_name = "prestamos_equipos_estudiantes" if loan_type == 'student' else "prestamos_equipos_profesores"
+        
+        try:
+            cursor.execute(f'''
+                UPDATE {table_name}
+                SET titulo_practica = ?, sala_id = ?, observaciones = ?
+                WHERE id = ?
+            ''', (titulo_practica, sala_id, observaciones, loan_id))
+            conn.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f"Error updating equipment loan: {e}")
+            return False
+        finally:
+            conn.close()
+            
+    # Método para eliminar un préstamo
+    def delete_loan(self, loan_id, loan_type):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        table_name = "prestamos_equipos_estudiantes" if loan_type == 'student' else "prestamos_equipos_profesores"
+        
+        try:
+            # Obtener el código y estado del equipo ANTES de borrar el préstamo
+            loan_info = self._get_equipment_code_for_loan(cursor, loan_id, loan_type)
+            if not loan_info:
+                return False # El préstamo no existe
 
+            equipo_codigo, estado_prestamo = loan_info
+
+            # Eliminar el registro del préstamo
+            cursor.execute(f'DELETE FROM {table_name} WHERE id = ?', (loan_id,))
+            conn.commit()
+
+            # Si el préstamo estaba activo, liberar el equipo
+            if estado_prestamo == 1: # 1 es 'En Préstamo'
+                self.inventory_model.update_equipment_status(equipo_codigo, 'DISPONIBLE')
+
+            return True
+        except sqlite3.Error as e:
+            print(f"Error deleting equipment loan: {e}")
+            conn.rollback() # Revertir cambios si hay error
+            return False
+        finally:
+            conn.close()
+
+    # Método para obtener el código del equipo de un préstamo
+    def _get_equipment_code_for_loan(self, cursor, loan_id, loan_type):
+        table_name = "prestamos_equipos_estudiantes" if loan_type == 'student' else "prestamos_equipos_profesores"
+        cursor.execute(f'SELECT equipo_codigo, estado FROM {table_name} WHERE id = ?', (loan_id,))
+        return cursor.fetchone()
+    
     def update_equipment_loan_return(self, loan_id, loan_type, fecha_devolucion, laboratorista_devolucion_id,
                                      monitor_devolucion_id, observaciones, documento_devolvente=None):
         conn = self.db_manager.get_connection()
