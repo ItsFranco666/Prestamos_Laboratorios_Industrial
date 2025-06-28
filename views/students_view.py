@@ -320,11 +320,11 @@ class StudentDialog(ctk.CTkToplevel):
         """
         super().__init__(parent)
         self.title(title) # Establece el título.
-        self.geometry("450x400") # Establece el tamaño.
+        self.geometry("550x300") # Establece el tamaño.
         self.transient(parent) # Hace que la ventana se mantenga sobre la principal.
         self.grab_set() # Captura todos los eventos, bloqueando la ventana principal.
         self.lift() # Asegura que la ventana esté al frente.
-
+        
         self.result = None # Almacenará los datos del formulario si se guarda.
         self.student_model = student_model 
         self.editing = student_data_for_dialog is not None # Bandera para saber si es edición o creación.
@@ -380,6 +380,9 @@ class StudentDialog(ctk.CTkToplevel):
         cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
         cancel_btn.pack(side="right", expand=True, padx=5)
 
+        # Centrar el diálogo
+        self._center_dialog()
+        
         # Pone el foco en el campo de código al abrir el diálogo.
         self.codigo_entry.focus_set()
         # Espera a que la ventana de diálogo se cierre antes de continuar.

@@ -3,6 +3,8 @@ from tkinter import messagebox, ttk
 from database.models import EquipmentLoanModel, InventoryModel, PersonalLaboratorioModel, StudentModel, ProfesorModel, RoomModel
 from utils.font_config import get_font
 from datetime import datetime
+import os, sys
+from PIL import Image, ImageTk
 
 class EquipmentLoansView(ctk.CTkFrame):
     def __init__(self, parent):
@@ -346,6 +348,25 @@ class EquipmentLoansView(ctk.CTkFrame):
             self.refresh_loans()
             self.update_idletasks()
 
+    def set_app_icon(self):
+        icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico")
+        icon_path_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.png")
+        final_icon_path = None
+        if sys.platform == "win32" and os.path.exists(icon_path_ico):
+            final_icon_path = icon_path_ico
+        elif os.path.exists(icon_path_png):
+            final_icon_path = icon_path_png
+        if final_icon_path:
+            try:
+                if sys.platform == "win32" and final_icon_path.endswith(".ico"):
+                    self.iconbitmap(default=final_icon_path)
+                else:
+                    icon_image = Image.open(final_icon_path)
+                    icon_photo = ImageTk.PhotoImage(icon_image)
+                    self.iconphoto(True, icon_photo)
+            except Exception as e:
+                print(f"Error setting dialog icon: {e}")
+
 class EquipmentReturnDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, loan_data):
         super().__init__(parent)
@@ -354,7 +375,8 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
         self.transient(parent)
         self.grab_set()
         self.lift()
-
+        self._set_app_icon()
+        self._center_dialog()
         self.loan_data = loan_data
         self.equipment_loan_model = EquipmentLoanModel()
         self.personal_model = PersonalLaboratorioModel()
@@ -410,6 +432,37 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
         
         self.wait_window(self)
 
+    def _set_app_icon(self):
+        icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico")
+        icon_path_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.png")
+        final_icon_path = None
+        if sys.platform == "win32" and os.path.exists(icon_path_ico):
+            final_icon_path = icon_path_ico
+        elif os.path.exists(icon_path_png):
+            final_icon_path = icon_path_png
+        if final_icon_path:
+            try:
+                if sys.platform == "win32" and final_icon_path.endswith(".ico"):
+                    self.iconbitmap(default=final_icon_path)
+                else:
+                    icon_image = Image.open(final_icon_path)
+                    icon_photo = ImageTk.PhotoImage(icon_image)
+                    self.iconphoto(True, icon_photo)
+            except Exception as e:
+                print(f"Error setting dialog icon: {e}")
+
+    def _center_dialog(self):
+        self.update_idletasks()
+        parent_x = self.master.winfo_rootx()
+        parent_y = self.master.winfo_rooty()
+        parent_width = self.master.winfo_width()
+        parent_height = self.master.winfo_height()
+        dialog_width = self.winfo_width()
+        dialog_height = self.winfo_height()
+        x = parent_x + (parent_width - dialog_width) // 2
+        y = parent_y + (parent_height - dialog_height) // 2
+        self.geometry(f"+{x}+{y}")
+
     def save(self):
         fecha_devolucion = self.fecha_devolucion_entry.get().strip()
         lab_nombre = self.lab_combo.get()
@@ -458,7 +511,8 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         self.transient(parent)
         self.grab_set()
         self.lift()
-
+        self._set_app_icon()
+        self._center_dialog()
         self.loan_data = loan_data
         self.loan_model = loan_model
         self.room_model = room_model
@@ -501,6 +555,37 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         cancel_btn.pack(side="right", expand=True, padx=5)
         
         self.wait_window(self)
+
+    def _set_app_icon(self):
+        icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico")
+        icon_path_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.png")
+        final_icon_path = None
+        if sys.platform == "win32" and os.path.exists(icon_path_ico):
+            final_icon_path = icon_path_ico
+        elif os.path.exists(icon_path_png):
+            final_icon_path = icon_path_png
+        if final_icon_path:
+            try:
+                if sys.platform == "win32" and final_icon_path.endswith(".ico"):
+                    self.iconbitmap(default=final_icon_path)
+                else:
+                    icon_image = Image.open(final_icon_path)
+                    icon_photo = ImageTk.PhotoImage(icon_image)
+                    self.iconphoto(True, icon_photo)
+            except Exception as e:
+                print(f"Error setting dialog icon: {e}")
+
+    def _center_dialog(self):
+        self.update_idletasks()
+        parent_x = self.master.winfo_rootx()
+        parent_y = self.master.winfo_rooty()
+        parent_width = self.master.winfo_width()
+        parent_height = self.master.winfo_height()
+        dialog_width = self.winfo_width()
+        dialog_height = self.winfo_height()
+        x = parent_x + (parent_width - dialog_width) // 2
+        y = parent_y + (parent_height - dialog_height) // 2
+        self.geometry(f"+{x}+{y}")
 
     def save(self):
         new_titulo = self.titulo_entry.get().strip()

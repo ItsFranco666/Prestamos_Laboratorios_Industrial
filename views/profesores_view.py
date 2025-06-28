@@ -287,7 +287,6 @@ class ProfessorsView(ctk.CTkFrame):
             # Refresca la tabla para mostrar el nuevo registro.
             self.refresh_professors()
     
-    # --- MODIFICADO: Simplificar el método de cambio de tema ---
     def on_theme_change(self, event=None):
         """
         Actualiza la vista cuando cambia el tema. Los estilos ya fueron 
@@ -315,7 +314,7 @@ class ProfessorDialog(ctk.CTkToplevel):
         """
         super().__init__(parent)
         self.title(title) # Establece el título.
-        self.geometry("450x400") # Establece el tamaño.
+        self.geometry("550x250") # Establece el tamaño.
         self.transient(parent) # Hace que la ventana se mantenga sobre la principal.
         self.grab_set() # Captura todos los eventos, bloqueando la ventana principal.
         self.lift() # Asegura que la ventana esté al frente.
@@ -370,6 +369,9 @@ class ProfessorDialog(ctk.CTkToplevel):
         cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
         cancel_btn.pack(side="right", expand=True, padx=5)
 
+        # Centrar dialogs
+        self._center_dialog()
+        
         # Pone el foco en el campo de cédula al abrir el diálogo.
         self.cedula_entry.focus_set()
         # Espera a que la ventana de diálogo se cierre antes de continuar.

@@ -312,7 +312,7 @@ class PersonalDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, personal_data=None):
         super().__init__(parent)
         self.title(title)
-        self.geometry("450x300")
+        self.geometry("550x200")
         self.transient(parent)
         self.grab_set()
         self.lift()
