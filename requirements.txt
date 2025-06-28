@@ -2,3 +2,4 @@ customtkinter==5.2.2
 pillow==11.2.1
 darkdetect==0.8.0
 pysql3==0.5.4
+watchdog==6.0.0

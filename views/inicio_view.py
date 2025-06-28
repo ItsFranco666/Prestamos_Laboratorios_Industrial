@@ -105,26 +105,25 @@ class MainWindow(ctk.CTk):
     def create_sidebar(self):
         self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0, fg_color=("#EBEBEB", "#1c1c1c"))
         self.sidebar_frame.grid(row=0, column=0, rowspan=3, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(8, weight=1)
+        self.sidebar_frame.grid_rowconfigure(9, weight=1)
 
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Sistema de\nGestión de Laboratorios", font=get_font("subtitle", "bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 20))
         
         self.nav_buttons = {}
         nav_items = [
-            ("Dashboard", self.show_dashboard, "dashboard_icon.png"),
-            ("Personal", self.show_personal, "student_icon.png"),
-            ("Estudiantes", self.show_students_view, "student_icon.png"),
-            ("Profesores", self.show_professor_management, "professors_icon.png"),
-            ("Salas", self.show_room_view, "student_icon.png"),
-            ("Inventario Equipos", self.show_equipment_inventory, "student_icon.png"),
-            ("Préstamos Salas", self.show_room_loans, "student_icon.png"),
-            ("Préstamos Equipos", self.show_equipment_loans, "student_icon.png")
+            ("🏠 Dashboard", self.show_dashboard),
+            ("👤 Personal", self.show_personal),
+            ("🎓 Estudiantes", self.show_students_view),
+            ("👨‍🏫 Profesores", self.show_professor_management),
+            ("🏢 Salas", self.show_room_view),
+            ("🖥️ Inventario Equipos", self.show_equipment_inventory),
+            ("🏷️ Préstamos Salas", self.show_room_loans),
+            ("🔌 Préstamos Equipos", self.show_equipment_loans)
         ]
         
         # Creacion de los botones del panel lateral
-        for i, (text, command, icon_name) in enumerate(nav_items, 1):
-            # Crear el botón
+        for i, (text, command) in enumerate(nav_items, 1):
             btn = ctk.CTkButton(
                 self.sidebar_frame,
                 text=text,
@@ -136,18 +135,6 @@ class MainWindow(ctk.CTk):
                 hover_color=("#ffd3a8", "#9c6d41"),
                 text_color=("#2b2b2b", "#ffffff")
             )
-            
-            # Cargar y configurar el icono si existe
-            try:
-                icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", icon_name)
-                if os.path.exists(icon_path):
-                    icon_image = Image.open(icon_path)
-                    icon_photo = ImageTk.PhotoImage(icon_image)
-                    btn.configure(image=icon_photo)
-                    btn.image = icon_photo  # type: ignore
-            except Exception as e:
-                print(f"Error loading icon {icon_name}: {e}")
-            
             btn.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
             self.nav_buttons[text] = btn
         
