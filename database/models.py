@@ -773,43 +773,56 @@ class EquipmentLoanModel:
     def get_equipment_loan_details(self, loan_id, loan_type):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
+        details = None
         if loan_type == 'student':
             cursor.execute('''
                 SELECT id, fecha_entrega, fecha_devolucion, equipo_codigo, laboratorista_entrega, monitor_entrega,
                        estudiante_id, numero_estudiantes, sala_id, titulo_practica, estado, 
-                       laboratorista_devolucion, monitor_devolucion, observaciones
+                       laboratorista_devolucion, monitor_devolucion, documento_devolvente, observaciones
                 FROM prestamos_equipos_estudiantes WHERE id = ?
             ''', (loan_id,))
+            details = cursor.fetchone()
         elif loan_type == 'professor':
+            # Se agrega un placeholder NULL para numero_estudiantes para mantener la consistencia de los índices
             cursor.execute('''
                 SELECT id, fecha_entrega, fecha_devolucion, equipo_codigo, laboratorista_entrega, monitor_entrega,
-                       profesor_id, sala_id, titulo_practica, estado,
-                       laboratorista_devolucion, monitor_devolucion, observaciones
+                       profesor_id, NULL as numero_estudiantes, sala_id, titulo_practica, estado,
+                       laboratorista_devolucion, monitor_devolucion, documento_devolvente, observaciones
                 FROM prestamos_equipos_profesores WHERE id = ?
             ''', (loan_id,))
-        else:
-            conn.close()
-            return None
-        details = cursor.fetchone()
+            details = cursor.fetchone()
+
         conn.close()
         return details
     
-    # Metodo para actualizar un prestamo
-    def update_equipment_loan(self, loan_id, loan_type, titulo_practica, sala_id, observaciones):
+    def update_equipment_loan(self, loan_id, loan_type, update_data):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         table_name = "prestamos_equipos_estudiantes" if loan_type == 'student' else "prestamos_equipos_profesores"
         
+        # Mapear 'usuario_id' al nombre de columna correcto en la BD
+        if 'usuario_id' in update_data:
+            if loan_type == 'student':
+                update_data['estudiante_id'] = update_data.pop('usuario_id')
+            else: # professor
+                update_data['profesor_id'] = update_data.pop('usuario_id')
+
+        if not update_data:
+            return True # No hay datos para actualizar
+
+        set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
+        params = list(update_data.values())
+        params.append(loan_id)
+        
+        query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
+        
         try:
-            cursor.execute(f'''
-                UPDATE {table_name}
-                SET titulo_practica = ?, sala_id = ?, observaciones = ?
-                WHERE id = ?
-            ''', (titulo_practica, sala_id, observaciones, loan_id))
+            cursor.execute(query, params)
             conn.commit()
             return True
         except sqlite3.Error as e:
             print(f"Error updating equipment loan: {e}")
+            conn.rollback()
             return False
         finally:
             conn.close()

@@ -125,7 +125,7 @@ class DatabaseManager:
                 monitor_entrega INTEGER REFERENCES personal_laboratorio(id),
                 estudiante_id INTEGER REFERENCES estudiantes(codigo) NOT NULL,
                 numero_estudiantes INTEGER,
-                sala_id INTEGER REFERENCES salas(id) NOT NULL,
+                sala_id INTEGER REFERENCES salas(id),
                 titulo_practica TEXT,
                 estado INTEGER NOT NULL CHECK (estado IN (0, 1)),
                 laboratorista_devolucion INTEGER REFERENCES personal_laboratorio(id),
