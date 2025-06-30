@@ -50,7 +50,7 @@ class DatabaseManager:
             
             CREATE TABLE IF NOT EXISTS profesores (
                 cedula INTEGER PRIMARY KEY,
-                nombre TEXT NOT NULL,
+                nombre TEXT,
                 proyecto_curricular_id INTEGER REFERENCES proyectos_curriculares(id)
             );
             
@@ -120,7 +120,7 @@ class DatabaseManager:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 fecha_entrega TIMESTAMP NOT NULL,
                 fecha_devolucion TIMESTAMP,
-                equipo_codigo TEXT REFERENCES inventario(codigo),
+                equipo_codigo TEXT REFERENCES inventario(codigo) NOT NULL,
                 laboratorista_entrega INTEGER REFERENCES personal_laboratorio(id),
                 monitor_entrega INTEGER REFERENCES personal_laboratorio(id),
                 estudiante_id INTEGER REFERENCES estudiantes(codigo) NOT NULL,
