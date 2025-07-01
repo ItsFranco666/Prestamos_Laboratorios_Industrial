@@ -320,7 +320,7 @@ class StudentDialog(ctk.CTkToplevel):
         """
         super().__init__(parent)
         self.title(title) # Establece el título.
-        self.geometry("550x300") # Establece el tamaño.
+        self.geometry("800x300") # Establece el tamaño.
         self.transient(parent) # Hace que la ventana se mantenga sobre la principal.
         self.grab_set() # Captura todos los eventos, bloqueando la ventana principal.
         self.lift() # Asegura que la ventana esté al frente.

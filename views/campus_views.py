@@ -150,7 +150,7 @@ class SedeDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, sede_data=None):
         super().__init__(parent)
         self.title(title)
-        self.geometry("500x200")
+        self.geometry("800x150")
         self.transient(parent)
         self.grab_set()
         self.lift()
@@ -178,8 +178,26 @@ class SedeDialog(ctk.CTkToplevel):
         cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
         cancel_btn.pack(side="right", expand=True, padx=5)
         
+        self._center_dialog()
         self.update_idletasks()
         self.wait_window(self)
+        
+    def _center_dialog(self):
+        """
+        Método auxiliar para centrar el diálogo en relación a la ventana principal.
+        """
+        self.update_idletasks()
+        parent_x = self.master.winfo_rootx()
+        parent_y = self.master.winfo_rooty()
+        parent_width = self.master.winfo_width()
+        parent_height = self.master.winfo_height()
+
+        dialog_width = self.winfo_width()
+        dialog_height = self.winfo_height()
+
+        x = parent_x + (parent_width - dialog_width) // 2
+        y = parent_y + (parent_height - dialog_height) // 2
+        self.geometry(f"+{x}+{y}")
 
     def save(self):
         nombre = self.nombre_entry.get().strip()

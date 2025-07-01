@@ -665,7 +665,7 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         # --- Cargar datos para los ComboBox ---
         self.laboratoristas_data = self.personal_model.get_laboratoristas()
         self.monitores_data = self.personal_model.get_monitores()
-        self.salas_data = self.room_model.get_all_rooms_for_dropdown()
+        self.salas_data = self.room_model.get_all_rooms_with_id_for_dropdown()
 
         # --- Elementos de la UI ---
         row_idx = 0

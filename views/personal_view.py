@@ -224,7 +224,7 @@ class PersonalView(ctk.CTkFrame):
         personal_list = self.personal_model.get_all_personal()
         for p in personal_list:
             if p[1] == nombre:  # Comparar por nombre
-                return (p[0], nombre, cargo)  # ID, nombre, cargo
+                return (p[0], nombre, p[2])  # ID, nombre, cargo (valor numérico)
         
         return None
 
@@ -312,7 +312,7 @@ class PersonalDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, personal_data=None):
         super().__init__(parent)
         self.title(title)
-        self.geometry("550x200")
+        self.geometry("800x200")
         self.transient(parent)
         self.grab_set()
         self.lift()
