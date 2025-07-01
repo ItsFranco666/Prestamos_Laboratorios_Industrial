@@ -76,28 +76,32 @@ class InventoryView(ctk.CTkFrame):
     
     def create_inventory_treeview_table(self):
         """
-        Configurar el widget Treeview de ttk para mostrar datos del
-        inventario, incluyendo encabezados, columnas y scrollbar.
+        Configures the ttk.Treeview widget to display inventory data,
+        including headers, columns, and both vertical and horizontal scrollbars.
         """
-        # Contenedor principal para la tabla con borde
+        # Main container for the table with a border
         table_main_container = ctk.CTkFrame(self, corner_radius=8, 
                                           border_width=1,
                                           border_color=("gray80", "gray20"))
         table_main_container.pack(fill="both", expand=True, pady=(0,10), padx=0)
 
-        # Frame interno para la tabla con fondo y padding
+        # Inner frame for the table with background and padding
         table_container_frame = ctk.CTkFrame(table_main_container, 
                                            corner_radius=15,
                                            fg_color=("white", "gray15"))
         table_container_frame.pack(fill="both", expand=True, padx=8, pady=8)
 
-        # Crear el Treeview APLICANDO el estilo global "Modern.Treeview"
+        # Configure the grid layout for the table container
+        table_container_frame.grid_rowconfigure(0, weight=1)
+        table_container_frame.grid_columnconfigure(0, weight=1)
+
+        # Create the Treeview using the global "Modern.Treeview" style
         self.tree = ttk.Treeview(table_container_frame,
                                columns=("Codigo", "MarcaSerie", "Responsable", "Ubicacion", "Descripcion", "Contenido", "Estado"),
-                               show="tree headings",
-                               style="Modern.Treeview") # Se aplica el estilo definido en MainWindow
+                               show="headings", # Use "headings" to hide the first empty column
+                               style="Modern.Treeview")
 
-        # Encabezados de la tabla
+        # Table Headers
         self.tree.heading("Codigo", text="🔑 Código", anchor="w")
         self.tree.heading("MarcaSerie", text="🏷️ Marca/Serie", anchor="w")
         self.tree.heading("Responsable", text="👤 Responsable", anchor="w")
@@ -106,32 +110,39 @@ class InventoryView(ctk.CTkFrame):
         self.tree.heading("Contenido", text="📦 Contenido", anchor="w")
         self.tree.heading("Estado", text="📊 Estado", anchor="w")
 
-        # Columnas de la tabla (ancho y expansion)
-        self.tree.column("#0", width=0, stretch=False) # Columna fantasma
-        self.tree.column("Codigo", width=100, stretch=False, anchor="w")
-        self.tree.column("MarcaSerie", width=150, stretch=False, anchor="w")
-        self.tree.column("Responsable", width=200, stretch=False, anchor="w")
-        self.tree.column("Ubicacion", width=150, stretch=False, anchor="w")
-        self.tree.column("Descripcion", width=250, stretch=True, anchor="w")
-        self.tree.column("Contenido", width=200, stretch=False, anchor="w")
-        self.tree.column("Estado", width=100, stretch=False, anchor="w")
+        # Table Columns (width and stretch behavior)
+        self.tree.column("Codigo", width=120, stretch=False, anchor="w")
+        self.tree.column("MarcaSerie", width=180, stretch=False, anchor="w")
+        self.tree.column("Responsable", width=220, stretch=False, anchor="w")
+        self.tree.column("Ubicacion", width=180, stretch=False, anchor="w")
+        self.tree.column("Descripcion", width=300, stretch=False, anchor="w") # Set a fixed initial width
+        self.tree.column("Contenido", width=250, stretch=False, anchor="w")
+        self.tree.column("Estado", width=120, stretch=False, anchor="w")
 
-        # Empaqueta el Treeview para que se muestre
-        self.tree.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        # Place the Treeview in the grid
+        self.tree.grid(row=0, column=0, sticky="nsew")
+
+        # Vertical Scrollbar for the table
+        v_scrollbar = ctk.CTkScrollbar(table_container_frame, 
+                                     command=self.tree.yview,
+                                     corner_radius=8,
+                                     width=12)
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
         
-        # Prevenir que el usuario redimensione las columnas
+        # Horizontal Scrollbar for the table
+        h_scrollbar = ctk.CTkScrollbar(table_container_frame, 
+                                     command=self.tree.xview,
+                                     orientation="horizontal",
+                                     corner_radius=8,
+                                     height=12)
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
+
+        # Configure the Treeview to scroll with both scrollbars
+        self.tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+
+        # Prevent the user from resizing columns
         self.tree.bind("<Button-1>", self.prevent_resize)
         self.tree.bind("<B1-Motion>", self.prevent_resize)
-        
-        # Scrollbar para la tabla
-        scrollbar = ctk.CTkScrollbar(table_container_frame, 
-                                   command=self.tree.yview,
-                                   corner_radius=8,
-                                   width=12)
-        scrollbar.pack(side="right", fill="y", pady=5, padx=(0,5))
-        
-        # Configura el Treeview para que se desplace con la scrollbar
-        self.tree.configure(yscrollcommand=scrollbar.set)
 
     def refresh_inventory(self):
         """
