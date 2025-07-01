@@ -132,17 +132,30 @@ class EquipmentLoansView(ctk.CTkFrame):
             messagebox.showerror("Error de Validación", "Código de Equipo, Código/Cédula de Usuario y Laboratorista son obligatorios.", parent=self)
             return
 
-        # Validar si el equipo existe y está disponible
+        # --- Validación de existencia de Equipo ---
         equipo_info = self.inventory_model.get_equipment_by_code(equipo_codigo)
         if not equipo_info:
-            messagebox.showerror("Equipo no encontrado", f"No se encontró un equipo con el código '{equipo_codigo}'.", parent=self)
-            return
-        # El índice 6 corresponde al 'estado' del equipo
-        if equipo_info[6] != 'DISPONIBLE':
-            messagebox.showerror("Equipo no disponible", f"El equipo con código '{equipo_codigo}' se encuentra '{equipo_info[6]}'. No se puede prestar.", parent=self)
-            return
+            # Alerta de que no existe
+            messagebox.showerror("Equipo no encontrado", f"El equipo con código '{equipo_codigo}' no existe en la base de datos.", parent=self)
+            # Preguntar si se desea añadir
+            if messagebox.askyesno("Crear Nuevo Equipo", f"¿Desea agregar '{equipo_codigo}' como un nuevo equipo al inventario?", parent=self):
+                # Crear registro en blanco
+                if not self.inventory_model.add_blank_equipment(equipo_codigo):
+                    messagebox.showerror("Error", "No se pudo crear el nuevo equipo. El préstamo ha sido cancelado.", parent=self)
+                    return # Cancelar si la creación falla
+                # Si se crea, se puede continuar, ya que el estado por defecto es 'DISPONIBLE'
+            else:
+                # Si el usuario dice no, cancelar el préstamo
+                return
 
-        # Validar existencia de usuario
+        # Si el equipo ya existía, verificar su estado
+        else:
+            # El índice 6 corresponde al 'estado' del equipo
+            if equipo_info[6] != 'DISPONIBLE':
+                messagebox.showerror("Equipo no disponible", f"El equipo con código '{equipo_codigo}' se encuentra '{equipo_info[6]}'. No se puede prestar.", parent=self)
+                return
+
+        # --- Validación de existencia de Usuario ---
         user_exists = None
         if user_type == "Estudiante":
             user_exists = self.student_model.get_student_by_code_or_id(user_id)
@@ -150,17 +163,32 @@ class EquipmentLoansView(ctk.CTkFrame):
             user_exists = self.profesor_model.get_professor_by_id(user_id)
         
         if not user_exists:
-            messagebox.showerror("Usuario no encontrado", f"No se encontró un {user_type.lower()} con el identificador '{user_id}'.", parent=self)
-            return
+            # Alerta de que no existe
+            messagebox.showerror("Usuario no encontrado", f"El {user_type.lower()} con identificador '{user_id}' no existe en la base de datos.", parent=self)
+            # Preguntar si se desea añadir
+            if messagebox.askyesno("Crear Nuevo Usuario", f"¿Desea crear un nuevo perfil de {user_type.lower()} para '{user_id}'?", parent=self):
+                # Crear registro en blanco según el tipo
+                success = False
+                if user_type == "Estudiante":
+                    success = self.student_model.add_blank_student(user_id)
+                else: # Profesor
+                    success = self.profesor_model.add_blank_profesor(user_id)
+                
+                if not success:
+                    messagebox.showerror("Error", f"No se pudo crear el nuevo perfil de {user_type.lower()}. El préstamo ha sido cancelado.", parent=self)
+                    return # Cancelar si la creación falla
+                # Si se crea, se puede continuar
+            else:
+                # Si el usuario dice no, cancelar el préstamo
+                return
 
-        # --- Obtener datos opcionales ---
+        # --- Si todas las validaciones pasan (o se crearon los registros), proceder a guardar ---
         sala_nombre = self.sala_combo.get()
         num_estudiantes_str = self.num_estudiantes_entry.get().strip()
         titulo_practica = self.titulo_practica_entry.get().strip()
         monitor_nombre = self.monitor_combo.get()
         observaciones = self.obs_textbox.get("1.0", "end-1c").strip()
         
-        # Obtener IDs de datos opcionales, serán None si no se seleccionan
         sala_id = next((s[0] for s in self.salas_data if s[1] == sala_nombre), None)
         laboratorista_id = next((p[0] for p in self.laboratoristas_data if p[1] == lab_nombre), None)
         monitor_id = next((p[0] for p in self.monitores_data if p[1] == monitor_nombre), None)
@@ -175,7 +203,6 @@ class EquipmentLoansView(ctk.CTkFrame):
 
         fecha_entrega = datetime.now()
 
-        # Guardar en la base de datos
         if user_type == "Estudiante":
             result = self.equipment_loan_model.add_loan_student(fecha_entrega, equipo_codigo, laboratorista_id, monitor_id, 
                                                               user_id, num_estudiantes, sala_id, titulo_practica, observaciones)

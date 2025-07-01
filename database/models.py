@@ -56,6 +56,23 @@ class StudentModel:
             return False
         finally:
             conn.close()
+
+    def add_blank_student(self, codigo):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Adds a student with only the code. Other fields are null.
+            cursor.execute('''
+                INSERT INTO estudiantes (codigo, nombre, cedula, proyecto_curricular_id)
+                VALUES (?, NULL, NULL, NULL)
+            ''', (codigo,))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error adding blank student: {e}")
+            return False
+        finally:
+            conn.close()
     
     def update_student(self, original_codigo, nombre, cedula, proyecto_id, new_codigo=None):
         conn = self.db_manager.get_connection()
@@ -146,6 +163,23 @@ class ProfesorModel: # Renamed from Profesor for consistency
             return True
         except sqlite3.IntegrityError as e:
             print(f"Error adding professor: {e}")
+            return False
+        finally:
+            conn.close()
+    
+    def add_blank_profesor(self, cedula):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Adds a professor with only the ID number. Other fields are null.
+            cursor.execute('''
+                INSERT INTO profesores (cedula, nombre, proyecto_curricular_id)
+                VALUES (?, NULL, NULL)
+            ''', (cedula,))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error adding blank professor: {e}")
             return False
         finally:
             conn.close()
@@ -351,6 +385,27 @@ class InventoryModel:
             return True
         except sqlite3.IntegrityError as e:
             print(f"Error adding equipment: {e}")
+            return False
+        finally:
+            conn.close()
+    
+    def add_blank_equipment(self, codigo):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Adds a piece of equipment with only the code and a 'DISPONIBLE' status.
+            # Other fields are null or have default values.
+            cursor.execute('''
+                INSERT INTO inventario 
+                (codigo, marca_serie, documento_funcionario, nombre_funcionario, 
+                descripcion, contenido, estado, sede_id)
+                VALUES (?, NULL, NULL, NULL, 'Nuevo equipo (detalles pendientes)', NULL, 'DISPONIBLE', NULL)
+            ''', (codigo,))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            # This could happen if the code already exists, though the view's logic should prevent it.
+            print(f"Error adding blank equipment: {e}")
             return False
         finally:
             conn.close()
