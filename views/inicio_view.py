@@ -109,7 +109,8 @@ class MainWindow(ctk.CTk):
             ("🎓 Estudiantes", self.show_students_view),
             ("👨‍🏫 Profesores", self.show_professor_management),
             ("🏢 Salas", self.show_room_view),
-            ("🖥️ Inventario Equipos", self.show_equipment_inventory),
+            ("🛠️ Inventario", self.show_equipment_inventory),
+            ("🖥️ Equipos", self.show_equipos_view),
             ("🏷️ Préstamos Salas", self.show_room_loans),
             ("🔌 Préstamos Equipos", self.show_equipment_loans)
         ]
@@ -217,6 +218,12 @@ class MainWindow(ctk.CTk):
         inventory_view = InventoryView(self.main_frame)
         inventory_view.pack(fill="both", expand=True)
         return inventory_view
+    
+    def show_equipos_view(self):
+        self.clear_main_content()
+        label = ctk.CTkLabel(self.main_frame, text="Equipos - En desarrollo", font=get_font("title"))
+        label.pack(expand=True, padx=20, pady=20)
+        return label
     
     def show_room_loans(self):
         self.clear_main_content()

@@ -362,30 +362,32 @@ class EquipmentDialog(ctk.CTkToplevel):
     """
     def __init__(self, parent, title, equipment_data_for_dialog=None, inventory_model=None):
         """
-        Constructor del diálogo de equipo.
-        :param parent: La ventana padre.
-        :param title: El título de la ventana de diálogo.
-        :param equipment_data_for_dialog: Datos del equipo si se está editando, None si se agrega.
-        :param inventory_model: La instancia del modelo de datos de inventario.
+        Constructor for the equipment dialog.
+        :param parent: The parent window.
+        :param title: The title of the dialog window.
+        :param equipment_data_for_dialog: Equipment data if editing, None if adding.
+        :param inventory_model: The instance of the inventory data model.
         """
         super().__init__(parent)
-        self.title(title) # Establece el título.
-        self.geometry("800x470") # Establece el tamaño.
-        self.transient(parent) # Hace que la ventana se mantenga sobre la principal.
-        self.grab_set() # Captura todos los eventos, bloqueando la ventana principal.
-        self.lift() # Asegura que la ventana esté al frente.
+        self.title(title)
+        # --- MODIFIED: Increased height for the new textbox ---
+        self.geometry("800x550") 
+        self.transient(parent)
+        self.grab_set()
+        self.lift()
 
-        self.result = None # Almacenará los datos del formulario si se guarda.
+        self.result = None
         self.inventory_model = inventory_model 
-        self.editing = equipment_data_for_dialog is not None # Bandera para saber si es edición o creación.
-        # Guarda el código original del equipo en modo edición.
+        self.editing = equipment_data_for_dialog is not None
         self.original_equipment_code = equipment_data_for_dialog[0] if self.editing else None
+        
+        # This will hold the status if it's determined automatically (add mode, or 'IN USE' in edit mode)
+        self.fixed_status = None
 
-        # Frame principal del diálogo.
         main_frame = ctk.CTkFrame(self, fg_color="transparent")
         main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        # Creación de etiquetas y campos de entrada para los datos del equipo.
+        # --- Field definitions ---
         ctk.CTkLabel(main_frame, text="Código:", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=8, sticky="w")
         self.codigo_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
         self.codigo_entry.grid(row=0, column=1, padx=5, pady=8, sticky="ew")
@@ -406,17 +408,35 @@ class EquipmentDialog(ctk.CTkToplevel):
         self.descripcion_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
         self.descripcion_entry.grid(row=4, column=1, padx=5, pady=8, sticky="ew")
         
-        ctk.CTkLabel(main_frame, text="Contenido:", font=get_font("normal")).grid(row=5, column=0, padx=5, pady=8, sticky="w")
-        self.contenido_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
-        self.contenido_entry.grid(row=5, column=1, padx=5, pady=8, sticky="ew")
+        # --- MODIFIED: Changed "Contenido" from Entry to Textbox for long text ---
+        ctk.CTkLabel(main_frame, text="Contenido:", font=get_font("normal")).grid(row=5, column=0, padx=5, pady=8, sticky="nw")
+        self.contenido_textbox = ctk.CTkTextbox(main_frame, font=get_font("normal"), height=120, wrap="word")
+        self.contenido_textbox.grid(row=5, column=1, padx=5, pady=8, sticky="ew")
         
+        # --- MODIFIED: Conditional logic for the "Estado" field ---
         ctk.CTkLabel(main_frame, text="Estado:", font=get_font("normal")).grid(row=6, column=0, padx=5, pady=8, sticky="w")
-        self.estado_combo = ctk.CTkComboBox(main_frame, 
-                                          values=["DISPONIBLE", "EN USO", "DAÑADO"],
-                                          font=get_font("normal"),
-                                          state="readonly")
-        self.estado_combo.grid(row=6, column=1, padx=5, pady=8, sticky="ew")
-        self.estado_combo.set("DISPONIBLE") # Valor por defecto
+        if self.editing:
+            current_status = equipment_data_for_dialog[6]
+            if current_status == "EN USO":
+                # If editing and item is on loan, show a non-editable field
+                self.estado_widget = ctk.CTkEntry(main_frame, font=get_font("normal"))
+                self.estado_widget.insert(0, "EN USO (No editable por préstamo activo)")
+                self.estado_widget.configure(state="disabled")
+                self.fixed_status = "EN USO"
+            else:
+                # If not on loan, allow changing between DISPONIBLE and DAÑADO
+                self.estado_widget = ctk.CTkComboBox(main_frame,
+                                                     values=["DISPONIBLE", "DAÑADO"],
+                                                     font=get_font("normal"),
+                                                     state="readonly")
+                self.estado_widget.set(current_status)
+        else:
+            # If adding a new item, status is automatically "DISPONIBLE" and not editable
+            self.estado_widget = ctk.CTkEntry(main_frame, font=get_font("normal"))
+            self.estado_widget.insert(0, "DISPONIBLE (Automático al crear)")
+            self.estado_widget.configure(state="disabled")
+            self.fixed_status = "DISPONIBLE"
+        self.estado_widget.grid(row=6, column=1, padx=5, pady=8, sticky="ew")
         
         ctk.CTkLabel(main_frame, text="Sede:", font=get_font("normal")).grid(row=7, column=0, padx=5, pady=8, sticky="w")
         self.sedes_data = self.inventory_model.get_sedes()
@@ -426,16 +446,14 @@ class EquipmentDialog(ctk.CTkToplevel):
                                         font=get_font("normal"),
                                         state="readonly")
         self.sede_combo.grid(row=7, column=1, padx=5, pady=8, sticky="ew")
-        self.sede_combo.set(sede_names[0]) # Valor por defecto
+        self.sede_combo.set(sede_names[0])
 
-        # Configura la columna de los campos de entrada para que se expanda.
         main_frame.grid_columnconfigure(1, weight=1)
 
-        # Si estamos en modo de edición, llena los campos con los datos del equipo.
+        # Populate fields if in edit mode
         if self.editing:
             self.codigo_entry.insert(0, str(equipment_data_for_dialog[0]))
             self.marca_serie_entry.insert(0, equipment_data_for_dialog[1])
-            # Extraer documento y nombre del responsable
             responsable_parts = equipment_data_for_dialog[2].split(' (')
             if len(responsable_parts) == 2:
                 nombre = responsable_parts[0]
@@ -443,30 +461,25 @@ class EquipmentDialog(ctk.CTkToplevel):
                 self.nombre_funcionario_entry.insert(0, nombre)
                 self.documento_entry.insert(0, documento)
             self.descripcion_entry.insert(0, equipment_data_for_dialog[4])
-            self.contenido_entry.insert(0, equipment_data_for_dialog[5])
-            self.estado_combo.set(equipment_data_for_dialog[6])
+            # Use the new textbox for content
+            self.contenido_textbox.insert("0.0", equipment_data_for_dialog[5])
+            # Status is handled by the logic above
             if equipment_data_for_dialog[3] != 'N/A':
                 self.sede_combo.set(equipment_data_for_dialog[3])
         
-        # Frame para los botones de acción.
+        # Action buttons frame
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         button_frame.grid(row=8, column=0, columnspan=2, pady=(20,0), sticky="ew")
         
-        # Botón para guardar los cambios.
         save_btn = ctk.CTkButton(button_frame, text="Guardar", command=self.save, font=get_font("normal"))
         save_btn.pack(side="left", expand=True, padx=5)
         
-        # Botón para cancelar y cerrar el diálogo.
         cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
         cancel_btn.pack(side="right", expand=True, padx=5)
         
-        # Centrar el Dialog
         self._center_dialog()
-
-        # Pone el foco en el campo de código al abrir el diálogo.
         self.codigo_entry.focus_set()
-        # Espera a que la ventana de diálogo se cierre antes de continuar.
-        self.wait_window(self) 
+        self.wait_window(self)
 
     def _center_dialog(self): # This method might not be strictly necessary if parent centering works well
         """
@@ -487,24 +500,31 @@ class EquipmentDialog(ctk.CTkToplevel):
     
     def save(self):
         """
-        Se ejecuta al presionar el botón "Guardar".
-        Valida los datos de entrada, los empaqueta en self.result y cierra el diálogo.
+        Runs when the "Guardar" button is pressed.
+        Validates the input data, packages it in self.result, and closes the dialog.
         """
         codigo = self.codigo_entry.get().strip()
         marca_serie = self.marca_serie_entry.get().strip()
         documento_funcionario = self.documento_entry.get().strip()
         nombre_funcionario = self.nombre_funcionario_entry.get().strip()
         descripcion = self.descripcion_entry.get().strip()
-        contenido = self.contenido_entry.get().strip()
-        estado = self.estado_combo.get()
+        # --- MODIFIED: Get content from the textbox ---
+        contenido = self.contenido_textbox.get("0.0", "end-1c").strip()
+        
+        # --- MODIFIED: Get status based on the dialog's logic ---
+        if self.fixed_status:
+            # Status was determined automatically (Add mode or "IN USE" on Edit)
+            estado = self.fixed_status
+        else:
+            # Status was selectable from the ComboBox
+            estado = self.estado_widget.get()
+
         sede_nombre = self.sede_combo.get()
 
-        # Validación de campos obligatorios.
         if not codigo or not descripcion:
             messagebox.showerror("Error de Validación", "Código y Descripción son obligatorios.", parent=self)
             return
         
-        # Obtiene el ID de la sede a partir del nombre seleccionado.
         sede_id = None
         if sede_nombre != "Seleccione una sede...":
             for s_id, s_name in self.sedes_data:
@@ -512,18 +532,14 @@ class EquipmentDialog(ctk.CTkToplevel):
                     sede_id = s_id
                     break
         
-        # Prepara el resultado dependiendo de si es edición o creación.
         if self.editing:
             new_codigo_val = codigo if codigo != self.original_equipment_code else self.original_equipment_code
-            # El resultado incluye el código original y el nuevo código (pueden ser iguales).
             self.result = (self.original_equipment_code, marca_serie, documento_funcionario, nombre_funcionario,
                           descripcion, contenido, estado, sede_id, new_codigo_val)
         else:
-            # El resultado para un nuevo equipo.
             self.result = (codigo, marca_serie, documento_funcionario, nombre_funcionario,
                           descripcion, contenido, estado, sede_id)
         
-        # Cierra la ventana de diálogo.
         self.destroy()
     
     def cancel(self):
