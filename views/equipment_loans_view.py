@@ -208,7 +208,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         table_container_frame.grid_rowconfigure(0, weight=1)
         table_container_frame.grid_columnconfigure(0, weight=1)
         
-        columns = ("tipo_usuario", "usuario_nombre", "equipo_desc", "fecha_entrega", "fecha_devolucion", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "laboratorista_devolucion", "monitor_devolucion", "estado_prestamo", "observaciones")
+        columns = ("tipo_usuario", "usuario_nombre", "equipo_desc", "fecha_entrega", "fecha_devolucion", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "laboratorista_devolucion", "monitor_devolucion", "estado_prestamo", "observaciones", "firma")
         
         # Create the Treeview with proper scrolling configuration
         self.tree = ttk.Treeview(table_container_frame, columns=columns, show="headings", style="Modern.Treeview")
@@ -226,6 +226,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.heading("monitor_devolucion", text="👥 Monitor Devolución", anchor='w')
         self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
         self.tree.heading("observaciones", text="📝 Observaciones", anchor='w')
+        self.tree.heading("firma", text="🖊️ Firma", anchor='w')
         
         # Configure column widths
         self.tree.column("tipo_usuario", width=120, stretch=False, minwidth=100)
@@ -240,6 +241,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.column("monitor_devolucion", width=150, stretch=False, minwidth=120)
         self.tree.column("estado_prestamo", width=100, stretch=False, minwidth=80)
         self.tree.column("observaciones", width=300, stretch=True, minwidth=200)
+        self.tree.column("firma", width=120, stretch=False, minwidth=100)
         
         # Create scrollbars
         v_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.yview, corner_radius=8, width=16)
@@ -288,18 +290,22 @@ class EquipmentLoansView(ctk.CTkFrame):
         for i, loan in enumerate(loans):
             # Se añade sala_id al desempaquetado
             loan_id, tipo, nombre, equipo_desc, f_entrega, f_devolucion, lab_ent, mon_ent, lab_dev, mon_dev, titulo_practica, estado_prestamo, obs, user_id, loan_type, equipo_codigo, sala_id = loan
-            
+            # Obtener la firma según el tipo y estado
+            firma = None
+            if estado_prestamo == 'Devuelto':
+                # Buscar detalles completos para obtener la firma
+                detalles = self.equipment_loan_model.get_equipment_loan_details(loan_id, loan_type)
+                if detalles:
+                    # Para estudiantes y profesores, el campo documento_devolvente está en el índice 13
+                    firma = detalles[13] if len(detalles) > 13 else None
             f_entrega_str = datetime.fromisoformat(f_entrega).strftime('%Y-%m-%d %H:%M') if f_entrega else 'N/A'
             f_devolucion_str = datetime.fromisoformat(f_devolucion).strftime('%Y-%m-%d %H:%M') if f_devolucion else "PENDIENTE"
-            
             values = (tipo, nombre, equipo_desc, f_entrega_str, f_devolucion_str, titulo_practica, 
                       lab_ent or 'N/A', mon_ent or 'N/A', lab_dev or 'N/A', mon_dev or 'N/A', 
-                      estado_prestamo, obs or '')
-            
+                      estado_prestamo, obs or '', firma or '')
             tags = ('alternate',) if i % 2 == 1 else ()
             if estado_prestamo == 'En Préstamo':
                 tags += ('active_loan',)
-            
             self.tree.insert("", "end", iid=f"{loan_type}_{loan_id}", values=values, tags=tags)
         
         # Guardar datos completos para usarlos después
