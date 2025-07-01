@@ -75,7 +75,7 @@ class EquipmentLoansView(ctk.CTkFrame):
 
         # Sala
         ctk.CTkLabel(form_grid, text="Sala:", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="w")
-        self.salas_data = self.room_model.get_all_rooms_for_dropdown()
+        self.salas_data = self.room_model.get_all_rooms_with_id_for_dropdown()
         sala_names = ["Seleccione una sala..."] + [s[1] for s in self.salas_data]
         self.sala_combo = ctk.CTkComboBox(form_grid, values=sala_names, font=get_font("normal"), state="readonly")
         self.sala_combo.set(sala_names[0])

@@ -72,7 +72,7 @@ class EquiposView(ctk.CTkFrame):
 
         self.tree.heading("Codigo", text="🔑 Código", anchor="w")
         self.tree.heading("Sala", text="🚪 Sala", anchor="w")
-        self.tree.heading("NumEquipo", text="#️⃣ Equipo No.", anchor="w")
+        self.tree.heading("NumEquipo", text="🚪 Equipo No.", anchor="w")
         self.tree.heading("Descripcion", text="📝 Descripción", anchor="w")
         self.tree.heading("Estado", text="📊 Estado", anchor="w")
         self.tree.heading("Observaciones", text="📋 Observaciones", anchor="w")
