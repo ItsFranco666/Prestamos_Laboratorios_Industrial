@@ -1,12 +1,10 @@
-# In university_management/views/inicio_view.py
 import customtkinter as ctk
 from tkinter import ttk
 import os
 import sys
-# Ensure PIL is installed: pip install Pillow
 from PIL import Image, ImageTk
+from utils.font_config import get_font
 
-# Import views
 from .personal_view import PersonalView
 from .students_view import StudentsView
 from .profesores_view import ProfessorsView
@@ -14,7 +12,6 @@ from .rooms_view import RoomsView
 from .inventory_view import InventoryView
 from .rooms_loans_view import RoomLoansView
 from .equipment_loans_view import EquipmentLoansView
-from utils.font_config import get_font # Assuming utils is in PYTHONPATH or same level
 
 class MainWindow(ctk.CTk):
     def __init__(self):
@@ -29,48 +26,43 @@ class MainWindow(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
         
-        # Configurar estilos ttk al inicio ---
+        # Set the initial theme based on the system, then configure styles
+        # This ensures the app starts with the system's theme
+        ctk.set_appearance_mode("System") 
         self.setup_ttk_styles()
         
         self.current_view = None
         self.create_sidebar()
         self.create_main_content_area()
         
-        # --- NUEVO: Inicializar detección de cambios de tema del sistema ---
-        self.last_system_theme = self.get_system_theme()
-        # self.check_system_theme_changes()
-        
         self.show_dashboard() # Default view
     
     def get_system_theme(self):
-        """Detecta el tema actual del sistema."""
+        """Detects the current system theme."""
         try:
+            # Using darkdetect library to check if the system is in dark mode
             import darkdetect
             return "Dark" if darkdetect.isDark() else "Light"
-        except:
-            return "Light"  # Por defecto a Light si no se puede detectar
+        except ImportError:
+            # Fallback to Light theme if darkdetect is not installed
+            return "Light"
     
     def setup_ttk_styles(self, theme_mode=None):
-        """Configura los estilos para ttk.Treeview de forma global."""
+        """Configures the styles for ttk.Treeview globally."""
         if theme_mode is None:
             theme_mode = ctk.get_appearance_mode()
         
-        # Si el tema es System, detectar el tema del sistema
+        # If the theme is "System", detect the actual system theme
         if theme_mode == "System":
-            import darkdetect
-            try:
-                system_theme = "Dark" if darkdetect.isDark() else "Light"
-            except:
-                system_theme = "Light"  # Por defecto a Light si no se puede detectar
-            theme_mode = system_theme
+            theme_mode = self.get_system_theme()
 
         style = ttk.Style()
         style.theme_use("default")
         
         normal_font = get_font("normal")
-        bold_font = get_font("normal", "bold") # Usar fuente en negrita para encabezados
+        bold_font = get_font("normal", "bold") # Use bold font for headers
 
-        # Colores según el tema
+        # Colors based on the theme
         if theme_mode == "Dark":
             tree_bg, text_color, selected_color, heading_bg, heading_active_bg = \
             ("#2b2b2b", "#ffffff", "#404040", "#4B5563", "#525E75")
@@ -78,7 +70,7 @@ class MainWindow(ctk.CTk):
             tree_bg, text_color, selected_color, heading_bg, heading_active_bg = \
             ("#ffffff", "#2b2b2b", "#e3f2fd", "#E5E7EB", "#CFD8DC")
 
-        # Estilo principal del Treeview
+        # Main style for the Treeview
         style.configure("Modern.Treeview", 
                         background=tree_bg,
                         foreground=text_color,
@@ -91,7 +83,7 @@ class MainWindow(ctk.CTk):
                   background=[('selected', selected_color)],
                   foreground=[('selected', text_color)])
         
-        # Estilo de los encabezados del Treeview
+        # Style for Treeview headings
         style.configure("Modern.Treeview.Heading",
                         background=heading_bg,
                         foreground=text_color,
@@ -122,7 +114,7 @@ class MainWindow(ctk.CTk):
             ("🔌 Préstamos Equipos", self.show_equipment_loans)
         ]
         
-        # Creacion de los botones del panel lateral
+        # Create the navigation buttons on the sidebar
         for i, (text, command) in enumerate(nav_items, 1):
             btn = ctk.CTkButton(
                 self.sidebar_frame,
@@ -138,12 +130,32 @@ class MainWindow(ctk.CTk):
             btn.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
             self.nav_buttons[text] = btn
         
+        # --- MODIFIED SECTION START ---
         self.appearance_mode_label = ctk.CTkLabel(self.sidebar_frame, text="Apariencia:", anchor="w", font=get_font("small"))
-        self.appearance_mode_label.grid(row=len(nav_items)+1, column=0, padx=20, pady=(10,0), sticky="sw")
-        self.appearance_mode_optionemenu = ctk.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
-                                                               command=self.change_appearance_mode_event, font=get_font("small"))
-        self.appearance_mode_optionemenu.grid(row=len(nav_items)+2, column=0, padx=20, pady=(0,20), sticky="sw")
-        self.appearance_mode_optionemenu.set(ctk.get_appearance_mode())
+        self.appearance_mode_label.grid(row=len(nav_items) + 1, column=0, padx=20, pady=(10, 0), sticky="sw")
+        
+        # The OptionMenu now only shows "Claro" and "Oscuro"
+        self.appearance_mode_optionemenu = ctk.CTkOptionMenu(
+            self.sidebar_frame, 
+            values=["Claro", "Oscuro"],
+            command=self.change_appearance_mode_event, 
+            font=get_font("small"),
+            # Added colors to match the style of the other active buttons
+            fg_color=("#ffa154", "#c95414"),
+            button_color=("#ff8c33", "#b34a0e"),
+            button_hover_color=("#ff7b1a", "#9e400c")
+        )
+        self.appearance_mode_optionemenu.grid(row=len(nav_items) + 2, column=0, padx=20, pady=(0, 20), sticky="sw")
+
+        # Set the initial value of the dropdown based on the current theme
+        current_mode = ctk.get_appearance_mode()
+        if current_mode == "System":
+            current_mode = self.get_system_theme()  # Returns "Dark" or "Light"
+
+        # Map the theme to the Spanish labels for the dropdown
+        display_mode = "Claro" if current_mode == "Light" else "Oscuro"
+        self.appearance_mode_optionemenu.set(display_mode)
+        # --- MODIFIED SECTION END ---
 
     def create_main_content_area(self):
         self.main_frame = ctk.CTkFrame(self, corner_radius=10, fg_color=("#ffffff", "#242424"))
@@ -155,16 +167,15 @@ class MainWindow(ctk.CTk):
         if self.current_view:
             self.current_view.destroy()
         
-        # Update button styles:
-        # Only the active button gets a specific color, others are transparent.
+        # Update button styles: only the active button gets a specific color
         for name, button in self.nav_buttons.items():
             if name == view_name:
                 button.configure(fg_color=("#ffa154", "#c95414"))  # Active button color
             else:
-                button.configure(fg_color="transparent")  # Reset non-active buttons to transparent
+                button.configure(fg_color="transparent")  # Reset non-active buttons
 
-        new_view = view_command() # This calls the show_... method which creates and packs the view
-        self.current_view = new_view # Update self.current_view with the returned view instance
+        new_view = view_command()
+        self.current_view = new_view
 
     def clear_main_content(self):
         for widget in self.main_frame.winfo_children():
@@ -219,19 +230,23 @@ class MainWindow(ctk.CTk):
         equipment_loans_view.pack(fill="both", expand=True)
         return equipment_loans_view
 
-    def change_appearance_mode_event(self, new_appearance_mode: str):
-        """Maneja el cambio de tema y asegura que la vista actual se actualice."""
+    def change_appearance_mode_event(self, new_appearance_mode_spanish: str):
+        """Handles theme changes and ensures the current view is updated."""
+        # Map the Spanish labels to CustomTkinter's internal theme names
+        theme_map = {"Claro": "Light", "Oscuro": "Dark"}
+        new_appearance_mode = theme_map.get(new_appearance_mode_spanish, "Light")
+
         ctk.set_appearance_mode(new_appearance_mode)
         
-        # Vuelve a aplicar los estilos ttk para el nuevo tema
+        # Re-apply ttk styles for the new theme
         self.setup_ttk_styles(theme_mode=new_appearance_mode)
         
-        # Forzar la actualización de la vista actual
+        # Force the current view to update
         if self.current_view:
-            # Si la vista actual tiene un método on_theme_change, lo llamamos
+            # Call a generic on_theme_change method if it exists
             if hasattr(self.current_view, 'on_theme_change'):
                 self.current_view.on_theme_change()
-            # Si la vista actual tiene un método refresh_*, lo llamamos
+            # Fallback to specific refresh methods
             elif hasattr(self.current_view, 'refresh_students'):
                 self.current_view.refresh_students()
             elif hasattr(self.current_view, 'refresh_professors'):
@@ -243,8 +258,9 @@ class MainWindow(ctk.CTk):
             elif hasattr(self.current_view, 'refresh_loans'):
                 self.current_view.refresh_loans()
             
-            # Forzar la actualización de la interfaz
+            # Force UI update
             self.current_view.update_idletasks()
+    # --- MODIFIED SECTION END ---
 
     def set_app_icon(self):
         try:
