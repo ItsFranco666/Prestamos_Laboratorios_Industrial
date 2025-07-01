@@ -718,17 +718,21 @@ class EquipmentLoanModel:
         finally:
             conn.close()
 
-    def get_equipment_loans(self, date_filter=None): # YYYY-MM-DD
+    def get_equipment_loans(self, search_term="", user_type_filter="Todos", status_filter="Todos"):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
-        student_query = '''
+        queries = []
+        
+        # Base student query with all necessary joins
+        student_base_query = '''
             SELECT pee.id, 'Estudiante' as tipo_usuario, e.nombre as usuario_nombre, inv.descripcion as equipo_desc,
                    pee.fecha_entrega, pee.fecha_devolucion, 
                    pl_ent.nombre as laboratorista_entrega, pm_ent.nombre as monitor_entrega,
                    pl_dev.nombre as laboratorista_devolucion, pm_dev.nombre as monitor_devolucion,
                    pee.titulo_practica, CASE pee.estado WHEN 1 THEN 'En Préstamo' ELSE 'Devuelto' END as estado_prestamo,
-                   pee.observaciones, pee.estudiante_id as usuario_id, 'student' as loan_type, pee.equipo_codigo, pee.sala_id
+                   pee.observaciones, pee.estudiante_id as usuario_id, 'student' as loan_type, pee.equipo_codigo, pee.sala_id,
+                   pee.documento_devolvente as firma
             FROM prestamos_equipos_estudiantes pee
             JOIN estudiantes e ON pee.estudiante_id = e.codigo
             JOIN inventario inv ON pee.equipo_codigo = inv.codigo
@@ -738,13 +742,15 @@ class EquipmentLoanModel:
             LEFT JOIN personal_laboratorio pm_dev ON pee.monitor_devolucion = pm_dev.id
         '''
         
-        professor_query = '''
+        # Base professor query with all necessary joins
+        professor_base_query = '''
             SELECT pep.id, 'Profesor' as tipo_usuario, p.nombre as usuario_nombre, inv.descripcion as equipo_desc,
                    pep.fecha_entrega, pep.fecha_devolucion,
                    pl_ent.nombre as laboratorista_entrega, pm_ent.nombre as monitor_entrega,
                    pl_dev.nombre as laboratorista_devolucion, pm_dev.nombre as monitor_devolucion,
                    pep.titulo_practica, CASE pep.estado WHEN 1 THEN 'En Préstamo' ELSE 'Devuelto' END as estado_prestamo,
-                   pep.observaciones, pep.profesor_id as usuario_id, 'professor' as loan_type, pep.equipo_codigo, pep.sala_id
+                   pep.observaciones, pep.profesor_id as usuario_id, 'professor' as loan_type, pep.equipo_codigo, pep.sala_id,
+                   pep.documento_devolvente as firma
             FROM prestamos_equipos_profesores pep
             JOIN profesores p ON pep.profesor_id = p.cedula
             JOIN inventario inv ON pep.equipo_codigo = inv.codigo
@@ -754,20 +760,60 @@ class EquipmentLoanModel:
             LEFT JOIN personal_laboratorio pm_dev ON pep.monitor_devolucion = pm_dev.id
         '''
         
-        if date_filter:
-            student_query += " WHERE DATE(pee.fecha_entrega) = ?"
-            professor_query += " WHERE DATE(pep.fecha_entrega) = ?"
+        # Dynamically build WHERE clauses based on filters
+        student_where_clauses = []
+        professor_where_clauses = []
+        student_params = []
+        professor_params = []
+
+        if search_term:
+            search_like = f'%{search_term}%'
+            student_where_clauses.append("(e.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pee.titulo_practica LIKE ?)")
+            professor_where_clauses.append("(p.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pep.titulo_practica LIKE ?)")
+            student_params.extend([search_like, search_like, search_like, search_like])
+            professor_params.extend([search_like, search_like, search_like, search_like])
+
+        status_map = {'En Préstamo': 1, 'Devuelto': 0}
+        if status_filter in status_map:
+            status_val = status_map[status_filter]
+            student_where_clauses.append("pee.estado = ?")
+            professor_where_clauses.append("pep.estado = ?")
+            student_params.append(status_val)
+            professor_params.append(status_val)
         
+        # Construct the final queries with WHERE clauses if they exist
+        student_query = student_base_query
+        if student_where_clauses:
+            student_query += " WHERE " + " AND ".join(student_where_clauses)
+
+        professor_query = professor_base_query
+        if professor_where_clauses:
+            professor_query += " WHERE " + " AND ".join(professor_where_clauses)
+            
+        # Decide which queries to execute based on the user type filter
+        if user_type_filter == 'Estudiante':
+            queries.append((student_query, student_params))
+        elif user_type_filter == 'Profesor':
+            queries.append((professor_query, professor_params))
+        else:  # "Todos"
+            queries.append((student_query, student_params))
+            queries.append((professor_query, professor_params))
+
         all_loans = []
-        params = [date_filter] if date_filter else []
-        cursor.execute(student_query, params)
-        all_loans.extend(cursor.fetchall())
-        cursor.execute(professor_query, params)
-        all_loans.extend(cursor.fetchall())
+        for query, param_list in queries:
+            try:
+                cursor.execute(query, param_list)
+                all_loans.extend(cursor.fetchall())
+            except sqlite3.Error as e:
+                print(f"Database error: {e}")
+                print(f"Query: {query}")
+                print(f"Params: {param_list}")
+                
+        conn.close()
         
+        # Sort the combined results in Python by delivery date
         all_loans.sort(key=lambda x: x[4] if x[4] else '', reverse=True)
         
-        conn.close()
         return all_loans
 
     def get_equipment_loan_details(self, loan_id, loan_type):

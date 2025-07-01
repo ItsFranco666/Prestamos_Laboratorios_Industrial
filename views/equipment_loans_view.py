@@ -195,67 +195,86 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.new_loan_btn.configure(fg_color=("gray70", "gray30"))
         
         title = ctk.CTkLabel(self.content_frame, text="Historial de Préstamos de Equipos", font=get_font("title", "bold"))
-        title.pack(pady=(10, 20))
+        title.pack(pady=(10, 10))
         
+        # --- Filter Frame (Always Visible) ---
+        self.filter_frame = ctk.CTkFrame(self.content_frame)
+        self.filter_frame.pack(fill="x", pady=(0, 15), padx=0)
+
+        # --- Widgets inside the filter frame ---
+        ctk.CTkLabel(self.filter_frame, text="Buscar:", font=get_font("normal")).grid(row=0, column=0, padx=(10,5), pady=10, sticky="w")
+        self.search_entry = ctk.CTkEntry(self.filter_frame, placeholder_text="Usuario, equipo, práctica...", font=get_font("normal"))
+        self.search_entry.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
+        self.search_entry.bind("<KeyRelease>", self._apply_filters)
+        
+        ctk.CTkLabel(self.filter_frame, text="Tipo:", font=get_font("normal")).grid(row=0, column=2, padx=(10,5), pady=10, sticky="w")
+        self.user_type_filter = ctk.CTkComboBox(self.filter_frame, values=["Todos", "Estudiante", "Profesor"], font=get_font("normal"), command=self._apply_filters)
+        self.user_type_filter.set("Todos")
+        self.user_type_filter.grid(row=0, column=3, padx=5, pady=10, sticky="ew")
+        
+        ctk.CTkLabel(self.filter_frame, text="Estado:", font=get_font("normal")).grid(row=0, column=4, padx=(10,5), pady=10, sticky="w")
+        self.status_filter = ctk.CTkComboBox(self.filter_frame, values=["Todos", "En Préstamo", "Devuelto"], font=get_font("normal"), command=self._apply_filters)
+        self.status_filter.set("Todos")
+        self.status_filter.grid(row=0, column=5, padx=(5,10), pady=10, sticky="ew")
+        
+        self.filter_frame.grid_columnconfigure(1, weight=3) # Give more space to search entry
+        self.filter_frame.grid_columnconfigure(3, weight=1)
+        self.filter_frame.grid_columnconfigure(5, weight=1)
+        
+        # --- Table and Actions ---
         table_main_container = ctk.CTkFrame(self.content_frame, corner_radius=8, border_width=1, border_color=("gray80", "gray20"))
         table_main_container.pack(fill="both", expand=True, pady=(0, 10), padx=0)
         
-        # Create a frame that will contain both the treeview and scrollbars
         table_container_frame = ctk.CTkFrame(table_main_container, corner_radius=15, fg_color=("white", "gray15"))
         table_container_frame.pack(fill="both", expand=True, padx=8, pady=8)
         
-        # Configure the container frame grid
         table_container_frame.grid_rowconfigure(0, weight=1)
         table_container_frame.grid_columnconfigure(0, weight=1)
         
-        columns = ("tipo_usuario", "usuario_nombre", "equipo_desc", "fecha_entrega", "fecha_devolucion", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "laboratorista_devolucion", "monitor_devolucion", "estado_prestamo", "observaciones", "firma")
+        # New column order
+        columns = ("tipo_usuario", "fecha_entrega", "usuario_nombre", "equipo_desc", "titulo_practica", "fecha_devolucion", "laboratorista_entrega", "monitor_entrega", "estado_prestamo", "laboratorista_devolucion", "monitor_devolucion", "firma", "observaciones")
         
-        # Create the Treeview with proper scrolling configuration
         self.tree = ttk.Treeview(table_container_frame, columns=columns, show="headings", style="Modern.Treeview")
         
-        # Configure headers
+        # Configure headers in the new order
         self.tree.heading("tipo_usuario", text="👤 Tipo Usuario", anchor='w')
+        self.tree.heading("fecha_entrega", text="📅 Fecha Entrega", anchor='w')
         self.tree.heading("usuario_nombre", text="👨‍💼 Nombre Usuario", anchor='w')
         self.tree.heading("equipo_desc", text="🔧 Equipo", anchor='w')
-        self.tree.heading("fecha_entrega", text="📅 Fecha Entrega", anchor='w')
-        self.tree.heading("fecha_devolucion", text="📅 Fecha Devolución", anchor='w')
         self.tree.heading("titulo_practica", text="📋 Título Práctica", anchor='w')
+        self.tree.heading("fecha_devolucion", text="📅 Fecha Devolución", anchor='w')
         self.tree.heading("laboratorista_entrega", text="👨‍🔬 Lab. Entrega", anchor='w')
         self.tree.heading("monitor_entrega", text="👥 Monitor Entrega", anchor='w')
+        self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
         self.tree.heading("laboratorista_devolucion", text="👨‍🔬 Lab. Devolución", anchor='w')
         self.tree.heading("monitor_devolucion", text="👥 Monitor Devolución", anchor='w')
-        self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
-        self.tree.heading("observaciones", text="📝 Observaciones", anchor='w')
         self.tree.heading("firma", text="🖊️ Firma", anchor='w')
-        
-        # Configure column widths
+        self.tree.heading("observaciones", text="📝 Observaciones", anchor='w')
+
+        # Configure column widths in the new order
         self.tree.column("tipo_usuario", width=120, stretch=False, minwidth=100)
+        self.tree.column("fecha_entrega", width=150, stretch=False, minwidth=130)
         self.tree.column("usuario_nombre", width=180, stretch=False, minwidth=150)
         self.tree.column("equipo_desc", width=220, stretch=False, minwidth=180)
-        self.tree.column("fecha_entrega", width=150, stretch=False, minwidth=130)
-        self.tree.column("fecha_devolucion", width=150, stretch=False, minwidth=130, anchor='center')
         self.tree.column("titulo_practica", width=200, stretch=False, minwidth=160)
+        self.tree.column("fecha_devolucion", width=150, stretch=False, minwidth=130, anchor='center')
         self.tree.column("laboratorista_entrega", width=150, stretch=False, minwidth=120)
         self.tree.column("monitor_entrega", width=150, stretch=False, minwidth=120)
+        self.tree.column("estado_prestamo", width=100, stretch=False, minwidth=80)
         self.tree.column("laboratorista_devolucion", width=150, stretch=False, minwidth=120)
         self.tree.column("monitor_devolucion", width=150, stretch=False, minwidth=120)
-        self.tree.column("estado_prestamo", width=100, stretch=False, minwidth=80)
-        self.tree.column("observaciones", width=300, stretch=True, minwidth=200)
         self.tree.column("firma", width=120, stretch=False, minwidth=100)
-        
-        # Create scrollbars
+        self.tree.column("observaciones", width=300, stretch=True, minwidth=200)
+
         v_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.yview, corner_radius=8, width=16)
         h_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.xview, orientation="horizontal", corner_radius=8, height=16)
         
-        # Configure the Treeview to work with scrollbars
         self.tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
         
-        # Grid layout for proper scrollbar positioning
         self.tree.grid(row=0, column=0, sticky="nsew", padx=(5, 0), pady=(5, 0))
         v_scroll.grid(row=0, column=1, sticky="ns", padx=(0, 5), pady=(5, 0))
         h_scroll.grid(row=1, column=0, sticky="ew", padx=(5, 0), pady=(0, 5))
         
-        # Add a small corner frame to fill the gap between scrollbars
         corner_frame = ctk.CTkFrame(table_container_frame, width=16, height=16, fg_color=("gray90", "gray25"))
         corner_frame.grid(row=1, column=1, padx=(0, 5), pady=(0, 5))
         
@@ -263,24 +282,34 @@ class EquipmentLoansView(ctk.CTkFrame):
         
         self.actions_frame = ctk.CTkFrame(self.content_frame, corner_radius=12)
         self.actions_frame.pack(pady=(15, 0), padx=0, fill="x")
-        
         self.return_btn = ctk.CTkButton(self.actions_frame, text="Registrar Devolución", command=self._return_selected_equipment, state="disabled", font=get_font("normal"), corner_radius=8, height=35)
         self.return_btn.pack(side="left", padx=8, pady=8)
-        
         self.edit_btn = ctk.CTkButton(self.actions_frame, text="Editar Préstamo", command=self._edit_selected_loan, state="disabled", font=get_font("normal"), corner_radius=8, height=35)
         self.edit_btn.pack(side="left", padx=8, pady=8)
-        
         self.delete_btn = ctk.CTkButton(self.actions_frame, text="Eliminar Préstamo", command=self._delete_selected_loan, state="disabled", fg_color=("#b3261e", "#e4675f"), hover_color=("#8b1e17", "#b8514a"), font=get_font("normal"), corner_radius=8, height=35)
         self.delete_btn.pack(side="left", padx=8, pady=8)
         
         self.tree.bind("<<TreeviewSelect>>", self._on_loan_select)
         self._on_loan_select()
 
+    def _apply_filters(self, event=None):
+        if hasattr(self, 'tree'):
+            self._populate_history_treeview()
+
     def _populate_history_treeview(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
         
-        loans = self.equipment_loan_model.get_equipment_loans()
+        # Get current filter values
+        search_term = self.search_entry.get()
+        user_type = self.user_type_filter.get()
+        status = self.status_filter.get()
+        
+        loans = self.equipment_loan_model.get_equipment_loans(
+            search_term=search_term,
+            user_type_filter=user_type,
+            status_filter=status
+        )
         
         current_mode = ctk.get_appearance_mode()
         tag_config = {'active_loan': ("#f59e0b",), 'alternate': ('#323232',) if current_mode == "Dark" else ('#f8f9fa',)}
@@ -288,27 +317,36 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.tag_configure('alternate', background=tag_config['alternate'][0])
 
         for i, loan in enumerate(loans):
-            # Se añade sala_id al desempaquetado
-            loan_id, tipo, nombre, equipo_desc, f_entrega, f_devolucion, lab_ent, mon_ent, lab_dev, mon_dev, titulo_practica, estado_prestamo, obs, user_id, loan_type, equipo_codigo, sala_id = loan
-            # Obtener la firma según el tipo y estado
-            firma = None
-            if estado_prestamo == 'Devuelto':
-                # Buscar detalles completos para obtener la firma
-                detalles = self.equipment_loan_model.get_equipment_loan_details(loan_id, loan_type)
-                if detalles:
-                    # Para estudiantes y profesores, el campo documento_devolvente está en el índice 13
-                    firma = detalles[13] if len(detalles) > 13 else None
+            # Unpack the 18 columns returned by the model
+            loan_id, tipo, nombre, equipo_desc, f_entrega, f_devolucion, lab_ent, mon_ent, lab_dev, mon_dev, titulo_practica, estado_prestamo, obs, user_id, loan_type, equipo_codigo, sala_id, firma_db = loan
+            
             f_entrega_str = datetime.fromisoformat(f_entrega).strftime('%Y-%m-%d %H:%M') if f_entrega else 'N/A'
             f_devolucion_str = datetime.fromisoformat(f_devolucion).strftime('%Y-%m-%d %H:%M') if f_devolucion else "PENDIENTE"
-            values = (tipo, nombre, equipo_desc, f_entrega_str, f_devolucion_str, titulo_practica, 
-                      lab_ent or 'N/A', mon_ent or 'N/A', lab_dev or 'N/A', mon_dev or 'N/A', 
-                      estado_prestamo, obs or '', firma or '')
+            
+            # Values tuple reordered to match the new column layout
+            values = (
+                tipo, 
+                f_entrega_str, 
+                nombre, 
+                equipo_desc, 
+                titulo_practica or '', 
+                f_devolucion_str, 
+                lab_ent or 'N/A', 
+                mon_ent or 'N/A',
+                estado_prestamo, 
+                lab_dev or 'N/A', 
+                mon_dev or 'N/A', 
+                firma_db or '', 
+                obs or ''
+            )
+            
             tags = ('alternate',) if i % 2 == 1 else ()
             if estado_prestamo == 'En Préstamo':
                 tags += ('active_loan',)
-            self.tree.insert("", "end", iid=f"{loan_type}_{loan_id}", values=values, tags=tags)
+                
+            iid = f"{loan_type}_{loan_id}"
+            self.tree.insert("", "end", iid=iid, values=values, tags=tags)
         
-        # Guardar datos completos para usarlos después
         self.loan_data = {f"{loan[14]}_{loan[0]}": loan for loan in loans}
 
     def _on_loan_select(self, event=None):
