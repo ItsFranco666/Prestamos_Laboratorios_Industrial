@@ -12,6 +12,9 @@ from .rooms_view import RoomsView
 from .inventory_view import InventoryView
 from .rooms_loans_view import RoomLoansView
 from .equipment_loans_view import EquipmentLoansView
+from .projects_view import ProyectosView
+from .campus_views import SedesView
+from .equipment_view import EquiposView
 
 class MainWindow(ctk.CTk):
     def __init__(self):
@@ -95,24 +98,26 @@ class MainWindow(ctk.CTk):
                   background=[('active', heading_active_bg)])
 
     def create_sidebar(self):
-        self.sidebar_frame = ctk.CTkFrame(self, width=300, corner_radius=0, fg_color=("#EBEBEB", "#1c1c1c"))
-        self.sidebar_frame.grid(row=0, column=0, rowspan=3, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(9, weight=1)
+        self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color=("#EBEBEB", "#1c1c1c"))
+        self.sidebar_frame.grid(row=0, column=0, rowspan=1, sticky="nsew")
+        self.sidebar_frame.grid_rowconfigure(12, weight=1)
 
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Sistema de\nGestión de Laboratorios", font=get_font("subtitle", "bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 20))
         
         self.nav_buttons = {}
         nav_items = [
-            ("🏠 Dashboard", self.show_dashboard),
-            ("👤 Personal", self.show_personal),
-            ("🎓 Estudiantes", self.show_students_view),
-            ("👨‍🏫 Profesores", self.show_professor_management),
-            ("🏢 Salas", self.show_room_view),
-            ("🛠️ Inventario", self.show_equipment_inventory),
-            ("🖥️ Equipos", self.show_equipos_view),
-            ("🏷️ Préstamos Salas", self.show_room_loans),
-            ("🔌 Préstamos Equipos", self.show_equipment_loans)
+            ("📊   Dashboard", self.show_dashboard),
+            ("📁   Préstamo de Salas", self.show_room_loans),
+            ("📁   Préstamo de Equipos", self.show_equipment_loans),
+            ("👤   Personal", self.show_personal),
+            ("👤   Estudiantes", self.show_students_view),
+            ("👤   Profesores", self.show_professor_management),
+            ("🚪   Salas", self.show_room_view),
+            ("🔧   Inventario", self.show_equipment_inventory),
+            ("🔧   Equipos", self.show_equipos_view),
+            ("📚   Proyectos Curriculares", self.show_proyectos_curriculares_view),
+            ("🏢   Sedes", self.show_sedes_view)
         ]
         
         # Create the navigation buttons on the sidebar
@@ -126,9 +131,10 @@ class MainWindow(ctk.CTk):
                 corner_radius=8,
                 fg_color="transparent",
                 hover_color=("#ffd3a8", "#9c6d41"),
-                text_color=("#2b2b2b", "#ffffff")
+                text_color=("#2b2b2b", "#ffffff"),
+                anchor="w"
             )
-            btn.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
+            btn.grid(row=i, column=0, padx=30, pady=3, sticky="ew")
             self.nav_buttons[text] = btn
         
         # --- MODIFIED SECTION START ---
@@ -221,9 +227,9 @@ class MainWindow(ctk.CTk):
     
     def show_equipos_view(self):
         self.clear_main_content()
-        label = ctk.CTkLabel(self.main_frame, text="Equipos - En desarrollo", font=get_font("title"))
-        label.pack(expand=True, padx=20, pady=20)
-        return label
+        inventory_view = EquiposView(self.main_frame)
+        inventory_view.pack(fill="both", expand=True)
+        return inventory_view
     
     def show_room_loans(self):
         self.clear_main_content()
@@ -234,6 +240,18 @@ class MainWindow(ctk.CTk):
     def show_equipment_loans(self):
         self.clear_main_content()
         equipment_loans_view = EquipmentLoansView(self.main_frame)
+        equipment_loans_view.pack(fill="both", expand=True)
+        return equipment_loans_view
+
+    def show_proyectos_curriculares_view(self):
+        self.clear_main_content()
+        equipment_loans_view = ProyectosView(self.main_frame)
+        equipment_loans_view.pack(fill="both", expand=True)
+        return equipment_loans_view
+
+    def show_sedes_view(self):
+        self.clear_main_content()
+        equipment_loans_view = SedesView(self.main_frame)
         equipment_loans_view.pack(fill="both", expand=True)
         return equipment_loans_view
 

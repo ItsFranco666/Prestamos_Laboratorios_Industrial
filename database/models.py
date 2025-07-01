@@ -269,11 +269,12 @@ class RoomModel:
         rooms = cursor.fetchall()
         conn.close()
         return rooms
-
-    def get_all_rooms_for_dropdown(self):
+    
+    def get_all_rooms_with_id_for_dropdown(self):
+        """Fetches all rooms with their ID and name, suitable for foreign key relations."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT codigo_interno, nombre FROM salas ORDER BY nombre ASC')
+        cursor.execute('SELECT id, nombre FROM salas ORDER BY nombre ASC')
         rooms = cursor.fetchall()
         conn.close()
         return rooms
@@ -1005,6 +1006,228 @@ class EquipmentLoanModel:
             return True
         except sqlite3.Error as e:
             print(f"Error updating equipment loan return: {e}")
+            return False
+        finally:
+            conn.close()
+
+class EquiposModel:
+    """
+    Manages database operations for the 'equipos' table, which represents
+    equipment located within specific rooms (salas).
+    """
+    def __init__(self):
+        self.db_manager = DatabaseManager()
+
+    def get_all_equipos(self, search_term="", sala_filter_id=None, status_filter=None):
+        """
+        Retrieves all equipment, with optional filters for search term,
+        room (sala), and status.
+        """
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        
+        query = '''
+            SELECT e.codigo, s.nombre as sala_nombre, e.numero_equipo,
+                   e.descripcion, e.estado, e.observaciones
+            FROM equipos e
+            LEFT JOIN salas s ON e.sala_id = s.id
+            WHERE (e.codigo LIKE ? OR e.descripcion LIKE ?)
+        '''
+        params = [f'%{search_term}%', f'%{search_term}%']
+        
+        if sala_filter_id:
+            query += " AND e.sala_id = ?"
+            params.append(sala_filter_id)
+        
+        if status_filter is not None and status_filter != -1: # -1 for "Todos"
+            query += " AND e.estado = ?"
+            params.append(status_filter)
+
+        query += " ORDER BY s.nombre, e.numero_equipo ASC"
+        cursor.execute(query, params)
+        equipos = cursor.fetchall()
+        conn.close()
+        return equipos
+
+    def get_equipo_by_code(self, codigo):
+        """Retrieves a single piece of equipment by its primary key (codigo)."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT codigo, sala_id, numero_equipo, descripcion, estado, observaciones
+            FROM equipos WHERE codigo = ?
+        ''', (codigo,))
+        item = cursor.fetchone()
+        conn.close()
+        return item
+
+    def add_equipo(self, codigo, sala_id, numero_equipo, descripcion, estado, observaciones):
+        """Adds a new piece of equipment to the database."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO equipos (codigo, sala_id, numero_equipo, descripcion, estado, observaciones)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (codigo, sala_id, numero_equipo, descripcion, estado, observaciones))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error adding equipo: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_equipo(self, original_codigo, sala_id, numero_equipo, descripcion, estado, observaciones, new_codigo=None):
+        """Updates an existing piece of equipment's information."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            if new_codigo is None:
+                new_codigo = original_codigo
+            cursor.execute('''
+                UPDATE equipos
+                SET codigo = ?, sala_id = ?, numero_equipo = ?, descripcion = ?,
+                    estado = ?, observaciones = ?
+                WHERE codigo = ?
+            ''', (new_codigo, sala_id, numero_equipo, descripcion, estado, observaciones, original_codigo))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error updating equipo: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def delete_equipo(self, codigo):
+        """Deletes a piece of equipment from the database by its code."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('DELETE FROM equipos WHERE codigo = ?', (codigo,))
+            conn.commit()
+        except sqlite3.Error as e:
+            print(f"Error deleting equipo: {e}") # Handle potential FK constraints
+        finally:
+            conn.close()
+
+class ProyectosCurricularesModel:
+    """Manages database operations for the 'proyectos_curriculares' table."""
+    def __init__(self):
+        self.db_manager = DatabaseManager()
+
+    def get_all_proyectos(self, search_term=""):
+        """Retrieves all curricular projects, with an optional search filter."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT id, nombre FROM proyectos_curriculares WHERE nombre LIKE ? ORDER BY nombre ASC',
+            (f'%{search_term}%',)
+        )
+        proyectos = cursor.fetchall()
+        conn.close()
+        return proyectos
+
+    def add_proyecto(self, nombre):
+        """Adds a new curricular project."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('INSERT INTO proyectos_curriculares (nombre) VALUES (?)', (nombre,))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error adding proyecto curricular: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_proyecto(self, id, nombre):
+        """Updates an existing curricular project's name."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE proyectos_curriculares SET nombre = ? WHERE id = ?', (nombre, id))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error updating proyecto curricular: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def delete_proyecto(self, id):
+        """Deletes a curricular project by its ID."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Note: This will fail if a student or professor is assigned to this project.
+            # This is expected behavior to maintain data integrity.
+            cursor.execute('DELETE FROM proyectos_curriculares WHERE id = ?', (id,))
+            conn.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f"Error deleting proyecto curricular: {e}")
+            return False
+        finally:
+            conn.close()
+
+class SedesModel:
+    """Manages database operations for the 'sedes' table."""
+    def __init__(self):
+        self.db_manager = DatabaseManager()
+
+    def get_all_sedes(self, search_term=""):
+        """Retrieves all campus locations (sedes), with an optional search filter."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT id, nombre FROM sedes WHERE nombre LIKE ? ORDER BY nombre ASC',
+            (f'%{search_term}%',)
+        )
+        sedes = cursor.fetchall()
+        conn.close()
+        return sedes
+
+    def add_sede(self, nombre):
+        """Adds a new campus location."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('INSERT INTO sedes (nombre) VALUES (?)', (nombre,))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error adding sede: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_sede(self, id, nombre):
+        """Updates an existing campus location's name."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE sedes SET nombre = ? WHERE id = ?', (nombre, id))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError as e:
+            print(f"Error updating sede: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def delete_sede(self, id):
+        """Deletes a campus location by its ID."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Note: This will fail if inventory items are assigned to this location.
+            cursor.execute('DELETE FROM sedes WHERE id = ?', (id,))
+            conn.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f"Error deleting sede: {e}")
             return False
         finally:
             conn.close()
