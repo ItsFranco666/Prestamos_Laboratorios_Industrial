@@ -51,11 +51,11 @@ class EquipmentLoansView(ctk.CTkFrame):
 
         # Título independiente del formulario (similar a StudentsView)
         title = ctk.CTkLabel(self.content_frame, text="Registrar Nuevo Préstamo de Equipo", font=get_font("title", "bold"))
-        title.pack(pady=(10, 20))
+        title.pack(pady=(10, 30))
 
         # Frame del formulario con marco
         form_frame = ctk.CTkFrame(self.content_frame)
-        form_frame.pack(fill="both", expand=True, padx=0, pady=(0, 10))
+        form_frame.pack(fill="both", expand=False, padx=0, pady=(0, 10))
 
         # --- Formulario ---
         form_grid = ctk.CTkFrame(form_frame, fg_color="transparent")
@@ -63,7 +63,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         form_grid.columnconfigure(1, weight=1)
 
         # Tipo de usuario
-        ctk.CTkLabel(form_grid, text="Tipo de Usuario:", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(form_grid, text="Tipo de Usuario:*", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=10, sticky="w")
         self.user_type_combo = ctk.CTkComboBox(form_grid, values=["Estudiante", "Profesor"], font=get_font("normal"), state="readonly")
         self.user_type_combo.set("Estudiante")
         self.user_type_combo.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
@@ -492,7 +492,7 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, loan_data):
         super().__init__(parent)
         self.title(title)
-        self.geometry("500x400")
+        self.geometry("800x450")
         self.transient(parent)
         self.grab_set()
         self.lift()
@@ -635,7 +635,7 @@ class EquipmentEditDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, loan_summary, loan_model, room_model, personal_model, student_model, profesor_model):
         super().__init__(parent)
         self.title(title)
-        self.geometry("600x700")
+        self.geometry("800x700")
         self.transient(parent)
         self.grab_set()
         self.lift()

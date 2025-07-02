@@ -217,7 +217,16 @@ class DatabaseManager:
         if cursor.fetchone()[0] == 0:
             cursor.executescript('''
                 INSERT INTO sedes (nombre) VALUES 
-                ('Facultad Tecnológica');
+                    ('Sede Central'),
+                    ('Sede Macarena A'),
+                    ('Sede Macarena B'),
+                    ('Facultad Tecnológica'),
+                    ('Facultad de Artes ASAB'),
+                    ('Facultad de Medio Ambiente y Recursos Naturales'),
+                    ('Sede Vivero'),
+                    ('Ciudadela Universitaria Bosa Porvenir'),
+                    ('Sede Aduanilla de Paiba'),
+                    ('Facultad de Ciencias de la Salud');
             ''')
         
         # Personal de laboratorio (laboratoristas y monitores)
@@ -267,11 +276,11 @@ class DatabaseManager:
                                       descripcion, contenido, estado, sede_id) VALUES 
                 ('EQ001', 'HP-2023-001', 12345678, 'Juan Pérez', 'Laptop HP ProBook', 'Laptop con Windows 11', 'DISPONIBLE', 1),
                 ('EQ002', 'DELL-2023-002', 87654321, 'María López', 'Laptop Dell Latitude', 'Laptop con Ubuntu', 'DISPONIBLE', 1),
-                ('EQ003', 'LEN-2023-003', 23456789, 'Carlos Ruiz', 'Laptop Lenovo ThinkPad', 'Laptop con Windows 10', 'EN USO', 1),
+                ('EQ003', 'LEN-2023-003', 23456789, 'Carlos Ruiz', 'Laptop Lenovo ThinkPad', 'Laptop con Windows 10', 'DISPONIBLE', 1),
                 ('EQ004', 'MSI-2023-004', 34567890, 'Ana Martínez', 'Laptop MSI Gaming', 'Laptop con Windows 11', 'DAÑADO', 1),
                 ('EQ005', 'ASU-2023-005', 45678901, 'Pedro Gómez', 'Laptop Asus ZenBook', 'Laptop con Linux Mint', 'DISPONIBLE', 1),
                 ('EQ006', 'MAC-2023-006', 56789012, 'Laura Torres', 'MacBook Pro', 'Laptop con macOS', 'DISPONIBLE', 1),
-                ('EQ007', 'HP-2023-007', 67890123, 'Roberto Díaz', 'Laptop HP EliteBook', 'Laptop con Windows 11', 'EN USO', 1),
+                ('EQ007', 'HP-2023-007', 67890123, 'Roberto Díaz', 'Laptop HP EliteBook', 'Laptop con Windows 11', 'DISPONIBLE', 1),
                 ('EQ008', 'DELL-2023-008', 78901234, 'Sofía Vargas', 'Laptop Dell XPS', 'Laptop con Ubuntu', 'DISPONIBLE', 1);
             ''')
 
@@ -362,8 +371,7 @@ class DatabaseManager:
                 laboratorista_devolucion, monitor_devolucion, documento_devolvente, observaciones) 
                 VALUES 
                 ('2024-03-15 10:30:00', NULL, 6, 2, 'EQ002', 80023456, 2, 'Investigación de Tesis', 1, NULL, NULL, NULL, 'Préstamo activo'),
-                ('2024-03-15 13:00:00', '2024-03-15 15:00:00', 7, 3, 'EQ003', 80034567, 3, 'Laboratorio de Control', 0, 7, 3, 80034567, 'Equipo con fallas menores'),
-                ('2024-03-15 15:30:00', NULL, 8, 4, 'EQ004', 80045678, 4, 'Proyecto de Grado', 1, NULL, NULL, NULL, 'Préstamo activo');
+                ('2024-03-15 13:00:00', '2024-03-15 15:00:00', 7, 3, 'EQ003', 80034567, 3, 'Laboratorio de Control', 0, 7, 3, 80034567, 'Equipo con fallas menores')
             ''')
 
         # Préstamos de equipos a estudiantes

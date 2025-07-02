@@ -107,17 +107,17 @@ class MainWindow(ctk.CTk):
         
         self.nav_buttons = {}
         nav_items = [
-            ("📊   Dashboard", self.show_dashboard),
-            ("📁   Préstamo de Salas", self.show_room_loans),
-            ("📁   Préstamo de Equipos", self.show_equipment_loans),
-            ("👤   Personal", self.show_personal),
-            ("👤   Estudiantes", self.show_students_view),
-            ("👤   Profesores", self.show_professor_management),
-            ("🚪   Salas", self.show_room_view),
-            ("🔧   Inventario", self.show_equipment_inventory),
-            ("🔧   Equipos", self.show_equipos_view),
-            ("📚   Proyectos Curriculares", self.show_proyectos_curriculares_view),
-            ("🏢   Sedes", self.show_sedes_view)
+            ("📊    Dashboard", self.show_dashboard),
+            ("📁    Préstamo de Salas", self.show_room_loans),
+            ("📁    Préstamo de Equipos", self.show_equipment_loans),
+            ("👤    Personal", self.show_personal),
+            ("👤    Estudiantes", self.show_students_view),
+            ("👤    Profesores", self.show_professor_management),
+            ("🚪    Salas", self.show_room_view),
+            ("🔧    Inventario", self.show_equipment_inventory),
+            ("🔧    Equipos", self.show_equipos_view),
+            ("🏢    Proyectos Curriculares", self.show_proyectos_curriculares_view),
+            ("🏢    Sedes", self.show_sedes_view)
         ]
         
         # Create the navigation buttons on the sidebar
