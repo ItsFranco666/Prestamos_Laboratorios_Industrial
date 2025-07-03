@@ -1,4 +1,3 @@
-# In university_management/database/models.py
 import sqlite3
 from .connection import DatabaseManager # Corrected import
 from datetime import datetime
@@ -1229,5 +1228,139 @@ class SedesModel:
         except sqlite3.Error as e:
             print(f"Error deleting sede: {e}")
             return False
+        finally:
+            conn.close()
+
+class DashboardModel:
+    def __init__(self):
+        self.db_manager = DatabaseManager()
+
+    def get_room_metrics(self):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT COUNT(*) FROM salas")
+            total_rooms = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT COUNT(DISTINCT sala_id) FROM (
+                    SELECT sala_id FROM prestamos_salas_profesores 
+                    WHERE hora_salida IS NULL
+                    UNION
+                    SELECT sala_id FROM prestamos_salas_estudiantes 
+                    WHERE hora_salida IS NULL
+                )
+            ''')
+            occupied_rooms = cursor.fetchone()[0]
+            available_rooms = total_rooms - occupied_rooms
+            return {
+                'total': total_rooms,
+                'occupied': occupied_rooms,
+                'available': available_rooms
+            }
+        finally:
+            conn.close()
+
+    def get_equipment_metrics(self):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT COUNT(*) FROM inventario WHERE estado != 'DAÑADO'")
+            total_equipment = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM inventario WHERE estado = 'EN USO'")
+            in_use_equipment = cursor.fetchone()[0]
+            return {
+                'total': total_equipment,
+                'in_use': in_use_equipment
+            }
+        finally:
+            conn.close()
+
+    def get_active_loans(self):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Profesores - equipos
+            cursor.execute('''
+                SELECT 'Equipo' as type, p.nombre as borrower, i.descripcion as item, 
+                       pep.fecha_entrega as date, 'Activo' as status
+                FROM prestamos_equipos_profesores pep
+                JOIN profesores p ON pep.profesor_id = p.cedula
+                JOIN inventario i ON pep.equipo_codigo = i.codigo
+                WHERE pep.fecha_devolucion IS NULL
+                ORDER BY pep.fecha_entrega DESC
+                LIMIT 10
+            ''')
+            active_loans = cursor.fetchall()
+            # Estudiantes - equipos
+            cursor.execute('''
+                SELECT 'Equipo' as type, e.nombre as borrower, i.descripcion as item, 
+                       pee.fecha_entrega as date, 'Activo' as status
+                FROM prestamos_equipos_estudiantes pee
+                JOIN estudiantes e ON pee.estudiante_id = e.codigo
+                JOIN inventario i ON pee.equipo_codigo = i.codigo
+                WHERE pee.fecha_devolucion IS NULL
+                ORDER BY pee.fecha_entrega DESC
+                LIMIT 10
+            ''')
+            active_loans.extend(cursor.fetchall())
+            # Profesores - salas
+            cursor.execute('''
+                SELECT 'Sala' as type, p.nombre as borrower, s.nombre as item, 
+                       psp.fecha_entrada as date, 'Activo' as status
+                FROM prestamos_salas_profesores psp
+                JOIN profesores p ON psp.profesor_id = p.cedula
+                JOIN salas s ON psp.sala_id = s.id
+                WHERE psp.hora_salida IS NULL
+                ORDER BY psp.fecha_entrada DESC
+                LIMIT 10
+            ''')
+            active_loans.extend(cursor.fetchall())
+            # Estudiantes - salas
+            cursor.execute('''
+                SELECT 'Sala' as type, e.nombre as borrower, s.nombre as item, 
+                       pse.fecha_entrada as date, 'Activo' as status
+                FROM prestamos_salas_estudiantes pse
+                JOIN estudiantes e ON pse.estudiante_id = e.codigo
+                JOIN salas s ON pse.sala_id = s.id
+                WHERE pse.hora_salida IS NULL
+                ORDER BY pse.fecha_entrada DESC
+                LIMIT 10
+            ''')
+            active_loans.extend(cursor.fetchall())
+            # Ordenar y limitar a 10 más recientes
+            active_loans.sort(key=lambda x: x[3], reverse=True)
+            return active_loans[:10]
+        finally:
+            conn.close()
+
+    def get_alerts(self):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Equipos dañados
+            cursor.execute('''
+                SELECT codigo, descripcion, estado, marca_serie
+                FROM inventario 
+                WHERE estado = 'DAÑADO'
+                ORDER BY codigo
+            ''')
+            damaged_equipment = cursor.fetchall()
+            # Equipos a revisar
+            cursor.execute('''
+                SELECT DISTINCT i.codigo, i.descripcion, 'REVISAR' as estado, pep.observaciones
+                FROM prestamos_equipos_profesores pep
+                JOIN inventario i ON pep.equipo_codigo = i.codigo
+                WHERE pep.observaciones IS NOT NULL 
+                AND pep.observaciones != ''
+                AND pep.fecha_devolucion IS NOT NULL
+                AND pep.fecha_devolucion > datetime('now', '-7 days')
+                AND i.estado != 'DAÑADO'
+                LIMIT 5
+            ''')
+            review_equipment = cursor.fetchall()
+            return {
+                'damaged': damaged_equipment,
+                'review': review_equipment
+            }
         finally:
             conn.close()

@@ -15,6 +15,7 @@ from .equipment_loans_view import EquipmentLoansView
 from .projects_view import ProyectosView
 from .campus_views import SedesView
 from .equipment_view import EquiposView
+from .dashboard_view import DashboardView
 
 class MainWindow(ctk.CTk):
     def __init__(self):
@@ -191,9 +192,9 @@ class MainWindow(ctk.CTk):
 
     def show_dashboard(self):
         self.clear_main_content()
-        label = ctk.CTkLabel(self.main_frame, text="Dashboard - En desarrollo", font=get_font("title"))
-        label.pack(expand=True, padx=20, pady=20)
-        return label
+        personal_view = DashboardView(self.main_frame)
+        personal_view.pack(fill="both", expand=True)
+        return personal_view
     
     def show_personal(self):
         self.clear_main_content()
@@ -237,7 +238,7 @@ class MainWindow(ctk.CTk):
         room_loans_view.pack(fill="both", expand=True)
         return room_loans_view
     
-    def show_equipment_loans(self):
+    def show_equipment_loans(self): 
         self.clear_main_content()
         equipment_loans_view = EquipmentLoansView(self.main_frame)
         equipment_loans_view.pack(fill="both", expand=True)
