@@ -258,14 +258,15 @@ class EquipmentLoansView(ctk.CTkFrame):
         table_container_frame.grid_rowconfigure(0, weight=1)
         table_container_frame.grid_columnconfigure(0, weight=1)
         
-        # Nuevo orden de columnas: estado después de fecha_entrega, firma antes de observaciones, fecha_devolucion después de monitor_entrega
-        columns = ("tipo_usuario", "fecha_entrega", "estado_prestamo", "usuario_nombre", "equipo_desc", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "fecha_devolucion", "laboratorista_devolucion", "monitor_devolucion", "firma", "observaciones")
+        # Nuevo orden de columnas: tipo_usuario, fecha_entrega, estado_prestamo, usuario_id, usuario_nombre, ...
+        columns = ("tipo_usuario", "fecha_entrega", "estado_prestamo", "usuario_id", "usuario_nombre", "equipo_desc", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "fecha_devolucion", "laboratorista_devolucion", "monitor_devolucion", "firma", "observaciones")
         self.tree = ttk.Treeview(table_container_frame, columns=columns, show="headings", style="Modern.Treeview")
         
         # Configure headers in the new order
         self.tree.heading("tipo_usuario", text="👤 Usuario", anchor='w')
         self.tree.heading("fecha_entrega", text="📅 Fecha Entrega", anchor='w')
         self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
+        self.tree.heading("usuario_id", text="🆔 ID", anchor='w')
         self.tree.heading("usuario_nombre", text="👤 Nombre Usuario", anchor='w')
         self.tree.heading("equipo_desc", text="💻 Equipo", anchor='w')
         self.tree.heading("titulo_practica", text="📋 Título Práctica", anchor='w')
@@ -281,6 +282,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.column("tipo_usuario", width=100, stretch=False, minwidth=100)
         self.tree.column("fecha_entrega", width=150, stretch=False, minwidth=130, anchor='center')
         self.tree.column("estado_prestamo", width=100, stretch=False, minwidth=80)
+        self.tree.column("usuario_id", width=110, stretch=False, minwidth=90)
         self.tree.column("usuario_nombre", width=230, stretch=False, minwidth=190)
         self.tree.column("equipo_desc", width=220, stretch=False, minwidth=180)
         self.tree.column("titulo_practica", width=190, stretch=False, minwidth=180)
@@ -351,6 +353,7 @@ class EquipmentLoansView(ctk.CTkFrame):
                 tipo,
                 f_entrega_str,
                 estado_prestamo,
+                user_id,
                 nombre,
                 equipo_desc,
                 titulo_practica or '',

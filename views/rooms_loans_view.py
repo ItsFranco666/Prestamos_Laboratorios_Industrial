@@ -76,16 +76,15 @@ class RoomLoansView(ctk.CTkFrame):
         
         # Room
         ctk.CTkLabel(form_grid, text="Sala:*", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="w")
-        self.salas_data = self.room_model.get_available_rooms_for_dropdown() # Only shows available rooms
-        sala_names = ["Seleccione una sala..."] + [s[1] for s in self.salas_data]
-        self.sala_combo = ctk.CTkComboBox(form_grid, values=sala_names, font=get_font("normal"), state="readonly")
-        self.sala_combo.set(sala_names[0])
+        self.salas_data = [] # Se inicializa vacío y se llena en _on_user_type_change
+        self.sala_combo = ctk.CTkComboBox(form_grid, values=["Seleccione una sala..."], font=get_font("normal"), state="readonly")
+        self.sala_combo.set("Seleccione una sala...")
         self.sala_combo.grid(row=2, column=1, padx=5, pady=10, sticky="ew")
 
         # Equipment Number (Conditional)
-        self.numero_equipo_label = ctk.CTkLabel(form_grid, text="Número de Equipo:*", font=get_font("normal"))
+        self.numero_equipo_label = ctk.CTkLabel(form_grid, text="Número de Equipo:", font=get_font("normal"))
         self.numero_equipo_label.grid(row=3, column=0, padx=5, pady=10, sticky="w")
-        self.numero_equipo_entry = ctk.CTkEntry(form_grid, placeholder_text="Número del equipo asignado en la sala", font=get_font("normal"))
+        self.numero_equipo_entry = ctk.CTkEntry(form_grid, placeholder_text="Número del equipo asignado en la sala (opcional)", font=get_font("normal"))
         self.numero_equipo_entry.grid(row=3, column=1, padx=5, pady=10, sticky="ew")
 
         # Lab Technician
@@ -117,15 +116,29 @@ class RoomLoansView(ctk.CTkFrame):
         self._on_user_type_change()
 
     def _on_user_type_change(self, event=None):
-        """Handles the conditional logic for the 'Número de Equipo' field."""
+        """Handles the conditional logic for fields based on user type, including the room list."""
         user_type = self.user_type_combo.get()
+        
         if user_type == "Profesor":
             self.numero_equipo_entry.delete(0, 'end')
             self.numero_equipo_entry.configure(state="disabled", placeholder_text="No aplica para profesores")
-            self.numero_equipo_label.configure(text="Número de Equipo:") # Remove asterisk
+            self.numero_equipo_label.configure(text="Número de Equipo:") # Sin asterisco
+            # Los profesores solo ven salas disponibles
+            self.salas_data = self.room_model.get_available_rooms_for_dropdown()
         else: # Estudiante
-            self.numero_equipo_entry.configure(state="normal", placeholder_text="Número del equipo asignado en la sala")
-            self.numero_equipo_label.configure(text="Número de Equipo:*") # Add asterisk
+            self.numero_equipo_entry.configure(state="normal", placeholder_text="Número del equipo asignado en la sala (opcional)")
+            self.numero_equipo_label.configure(text="Número de Equipo:") # Sin asterisco
+            # Los estudiantes ven todas las salas
+            self.salas_data = self.room_model.get_all_rooms_with_id_for_dropdown()
+
+        sala_names = ["Seleccione una sala..."] + [s[1] for s in self.salas_data]
+        current_selection = self.sala_combo.get()
+        self.sala_combo.configure(values=sala_names)
+        # Mantener la selección si aún es válida, de lo contrario, reiniciar
+        if current_selection in sala_names:
+            self.sala_combo.set(current_selection)
+        else:
+            self.sala_combo.set(sala_names[0])
 
     def _save_loan(self):
         """Validates form data and saves the new room loan."""
@@ -140,17 +153,15 @@ class RoomLoansView(ctk.CTkFrame):
             return
 
         # --- Conditional validation for student ---
-        numero_equipo = 0
+        numero_equipo = None
         if user_type == "Estudiante":
             numero_equipo_str = self.numero_equipo_entry.get().strip()
-            if not numero_equipo_str:
-                messagebox.showerror("Error de Validación", "El Número de Equipo es obligatorio para préstamos a estudiantes.", parent=self)
-                return
-            try:
-                numero_equipo = int(numero_equipo_str)
-            except ValueError:
-                messagebox.showerror("Error de Validación", "El Número de Equipo debe ser un valor numérico.", parent=self)
-                return
+            if numero_equipo_str:
+                try:
+                    numero_equipo = int(numero_equipo_str)
+                except ValueError:
+                    messagebox.showerror("Error de Validación", "El Número de Equipo debe ser un valor numérico si se proporciona.", parent=self)
+                    return
 
         # --- User existence validation (with new profile workflow) ---
         user_exists = self.student_model.get_student_by_code_or_id(user_id) if user_type == "Estudiante" else self.profesor_model.get_professor_by_id(user_id)
@@ -233,19 +244,41 @@ class RoomLoansView(ctk.CTkFrame):
         table_container_frame.grid_rowconfigure(0, weight=1)
         table_container_frame.grid_columnconfigure(0, weight=1)
         
-        columns = ("estado", "tipo_usuario", "usuario_nombre", "sala_nombre", "fecha_entrada", "hora_salida", "numero_equipo", "laboratorista", "monitor", "firma", "observaciones")
+        # NUEVO ORDEN DE COLUMNAS
+        columns = ("tipo_usuario", "fecha_entrada", "estado", "usuario_nombre", "usuario_id", "sala_nombre", "laboratorista", "monitor", "hora_salida", "numero_equipo", "firma", "observaciones")
         self.tree = ttk.Treeview(table_container_frame, columns=columns, show="headings", style="Modern.Treeview")
         
-        for col, text in [("estado", "📊 Estado"), ("tipo_usuario", "👤 Tipo"), ("usuario_nombre", "👤 Nombre Usuario"), 
-                           ("sala_nombre", "🚪 Sala"), ("fecha_entrada", "📅 Fecha Entrada"), ("hora_salida", "🕒 Hora Salida"),
-                           ("numero_equipo", "💻 # Equipo"), ("laboratorista", "👨‍🔬 Laboratorista"), ("monitor", "👥 Monitor"),
-                           ("firma", "✏️ Firma"), ("observaciones", "📝 Obs.")]:
+        for col, text in [
+            ("tipo_usuario", "👤 Tipo"),
+            ("fecha_entrada", "📅 Fecha Entrada"),
+            ("estado", "📊 Estado"),
+            ("usuario_nombre", "👤 Nombre Usuario"),
+            ("usuario_id", "🆔 ID"),
+            ("sala_nombre", "🚪 Sala"),
+            ("laboratorista", "👨‍🔬 Laboratorista"),
+            ("monitor", "👥 Monitor"),
+            ("hora_salida", "🕒 Hora Salida"),
+            ("numero_equipo", "💻 Equipo"),
+            ("firma", "✏️ Firma"),
+            ("observaciones", "📝 Observaciones")
+        ]:
             self.tree.heading(col, text=text, anchor='w')
 
-        for col, width in [("estado", 100), ("tipo_usuario", 100), ("usuario_nombre", 200), ("sala_nombre", 150),
-                           ("fecha_entrada", 150), ("hora_salida", 120), ("numero_equipo", 80), ("laboratorista", 180),
-                           ("monitor", 180), ("firma", 100), ("observaciones", 250)]:
-            self.tree.column(col, width=width, stretch=False, minwidth=width)
+        for col, width, anchor in [
+            ("tipo_usuario", 110, 'w'),
+            ("fecha_entrada", 160, 'w'),
+            ("estado", 110, 'w'),
+            ("usuario_nombre", 250, 'w'),
+            ("usuario_id", 130, 'w'),
+            ("sala_nombre", 100, 'center'),
+            ("laboratorista", 250, 'w'),
+            ("monitor", 250, 'w'),
+            ("hora_salida", 130, 'center'),
+            ("numero_equipo", 100, 'center'),
+            ("firma", 120, 'center'),
+            ("observaciones", 350, 'w')
+        ]:
+            self.tree.column(col, width=width, stretch=False, minwidth=width, anchor=anchor)
         self.tree.column("observaciones", stretch=True)
 
         v_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.yview, corner_radius=8, width=16)
@@ -293,8 +326,11 @@ class RoomLoansView(ctk.CTkFrame):
             sala_filter_id=sala_filter_id
         )
         
-        # Configure tag for highlighting active loans
-        self.tree.tag_configure('active_loan', background="#F3F0D7")
+        # Configurar solo el texto en amarillo para préstamos activos
+        current_mode = ctk.get_appearance_mode()
+        yellow_fg = '#f59e0b'
+        self.tree.tag_configure('active_loan', foreground=yellow_fg)
+        self.tree.tag_configure('alternate', background='#323232' if current_mode == "Dark" else '#f8f9fa')
 
         for i, loan in enumerate(loans):
             (loan_id, tipo_usuario, usuario_nombre, sala_nombre, fecha_entrada, hora_salida, 
@@ -302,17 +338,23 @@ class RoomLoansView(ctk.CTkFrame):
              estado_prestamo, firma) = loan
 
             f_entrada_str = datetime.fromisoformat(fecha_entrada).strftime('%Y-%m-%d %H:%M')
-            
             values = (
-                estado_prestamo, tipo_usuario, usuario_nombre or 'N/A', sala_nombre or 'N/A', f_entrada_str,
-                hora_salida or 'PENDIENTE', numero_equipo if numero_equipo is not None else 'N/A',
-                laboratorista or 'N/A', monitor or 'N/A', firma or '', observaciones or ''
+                tipo_usuario,
+                f_entrada_str,
+                estado_prestamo,
+                usuario_nombre or 'N/A',
+                user_id or 'N/A',
+                sala_nombre or 'N/A',
+                laboratorista or 'N/A',
+                monitor or 'N/A',
+                hora_salida or 'PENDIENTE',
+                numero_equipo if numero_equipo is not None else 'N/A',
+                firma or '',
+                observaciones or ''
             )
-            
-            tags = ()
+            tags = ('alternate',) if i % 2 == 1 else ()
             if estado_prestamo == 'En Préstamo':
                 tags += ('active_loan',)
-                
             iid = f"{loan_type}_{loan_id}"
             self.tree.insert("", "end", iid=iid, values=values, tags=tags)
         
@@ -402,7 +444,7 @@ class RoomReturnDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, loan_data):
         super().__init__(parent)
         self.title(title)
-        self.geometry("600x400")
+        self.geometry("600x320")
         self.transient(parent)
         self.grab_set()
         self.lift()
@@ -432,12 +474,26 @@ class RoomReturnDialog(ctk.CTkToplevel):
 
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         button_frame.grid(row=3, column=0, columnspan=2, pady=20, sticky="ew")
-        save_btn = ctk.CTkButton(button_frame, text="Confirmar Salida", command=self.save)
+        save_btn = ctk.CTkButton(button_frame, text="Confirmar Salida", command=self.save, font=get_font("normal"))
         save_btn.pack(side="left", expand=True, padx=5)
-        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray")
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
         cancel_btn.pack(side="right", expand=True, padx=5)
         
+        self._center_dialog()
         self.wait_window(self)
+
+    def _center_dialog(self):
+        """Centra el diálogo en la ventana padre."""
+        self.update_idletasks()
+        parent_x = self.master.winfo_rootx()
+        parent_y = self.master.winfo_rooty()
+        parent_width = self.master.winfo_width()
+        parent_height = self.master.winfo_height()
+        dialog_width = self.winfo_width()
+        dialog_height = self.winfo_height()
+        x = parent_x + (parent_width - dialog_width) // 2
+        y = parent_y + (parent_height - dialog_height) // 2
+        self.geometry(f"+{x}+{y}")
 
     def save(self):
         hora_salida = self.hora_salida_entry.get().strip()
@@ -470,116 +526,224 @@ class RoomEditDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, loan_summary, loan_model, personal_model, student_model, profesor_model, room_model):
         super().__init__(parent)
         self.title(title)
-        self.geometry("800x600")
+        self.geometry("900x700")
         self.transient(parent)
         self.grab_set()
+        self.lift()
 
-        # Store models and loan identifiers
-        self.loan_model, self.personal_model, self.student_model, self.profesor_model, self.room_model = \
-            loan_model, personal_model, student_model, profesor_model, room_model
-        
-        self.original_loan_id = loan_summary[0]
+        self.loan_model = loan_model
+        self.personal_model = personal_model
+        self.student_model = student_model
+        self.profesor_model = profesor_model
+        self.room_model = room_model
+        self.loan_id = loan_summary[0]
         self.original_loan_type = loan_summary[10]
-        self.loan_details = self.loan_model.get_room_loan_details(self.original_loan_id, self.original_loan_type)
+        self.loan_details = self.loan_model.get_room_loan_details(self.loan_id, self.original_loan_type)
         self.result = None
 
-        scrollable_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        scrollable_frame = ctk.CTkScrollableFrame(self, fg_color="transparent", label_text="Detalles del Préstamo de Sala")
         scrollable_frame.pack(expand=True, fill="both", padx=15, pady=15)
         scrollable_frame.columnconfigure(1, weight=1)
 
-        # Load data for ComboBoxes
         self.laboratoristas_data = self.personal_model.get_laboratoristas()
         self.monitores_data = self.personal_model.get_monitores()
         self.salas_data = self.room_model.get_all_rooms_with_id_for_dropdown()
-        
-        # --- UI Elements ---
-        # User Type and ID
-        ctk.CTkLabel(scrollable_frame, text="Tipo de Usuario:", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=10, sticky="w")
+
+        row_idx = 0
+        # Tipo de Usuario
+        ctk.CTkLabel(scrollable_frame, text="Tipo de Usuario:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.user_type_combo = ctk.CTkComboBox(scrollable_frame, values=["Estudiante", "Profesor"], font=get_font("normal"), state="readonly")
         self.user_type_combo.set("Estudiante" if self.original_loan_type == "student" else "Profesor")
-        self.user_type_combo.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
+        self.user_type_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
 
-        ctk.CTkLabel(scrollable_frame, text="Código/Cédula Usuario:", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=10, sticky="w")
+        # ID Usuario
+        ctk.CTkLabel(scrollable_frame, text="Código/Cédula Usuario:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.user_id_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
-        self.user_id_entry.insert(0, self.loan_details[5]) # estudiante_id or profesor_id
-        self.user_id_entry.grid(row=1, column=1, padx=5, pady=10, sticky="ew")
+        # --- Corrección: Mapear índices según tipo de préstamo ---
+        ld = self.loan_details
+        if self.original_loan_type == 'student':
+            # id, fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, numero_equipo, firma_estudiante, novedad
+            idx = {
+                'id': 0, 'fecha_entrada': 1, 'laboratorista': 2, 'monitor': 3, 'sala_id': 4, 'usuario_id': 5,
+                'hora_salida': 6, 'numero_equipo': 7, 'firma': 8, 'observaciones': 9
+            }
+        else:
+            # id, fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones
+            idx = {
+                'id': 0, 'fecha_entrada': 1, 'laboratorista': 2, 'monitor': 3, 'sala_id': 4, 'usuario_id': 5,
+                'hora_salida': 6, 'firma': 7, 'observaciones': 8, 'numero_equipo': None
+            }
+        self.user_id_entry.insert(0, ld[idx['usuario_id']])
+        self.user_id_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
 
-        # Other fields (Sala, Numero Equipo, etc.)
-        ctk.CTkLabel(scrollable_frame, text="Sala:", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="w")
+        # Fecha Entrada
+        ctk.CTkLabel(scrollable_frame, text="Fecha Entrada:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
+        self.fecha_entrada_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
+        self.fecha_entrada_entry.insert(0, datetime.fromisoformat(ld[idx['fecha_entrada']]).strftime('%Y-%m-%d %H:%M:%S'))
+        self.fecha_entrada_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
+
+        # Hora Salida
+        ctk.CTkLabel(scrollable_frame, text="Hora Salida:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
+        self.hora_salida_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
+        if ld[idx['hora_salida']]:
+            self.hora_salida_entry.insert(0, ld[idx['hora_salida']])
+        self.hora_salida_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
+
+        # Sala
+        ctk.CTkLabel(scrollable_frame, text="Sala:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         sala_names = ["Ninguna"] + [s[1] for s in self.salas_data]
         self.sala_combo = ctk.CTkComboBox(scrollable_frame, values=sala_names, font=get_font("normal"), state="readonly")
-        current_sala_name = next((s[1] for s in self.salas_data if s[0] == self.loan_details[4]), "Ninguna")
+        current_sala_name = next((s[1] for s in self.salas_data if s[0] == ld[idx['sala_id']]), "Ninguna")
         self.sala_combo.set(current_sala_name)
-        self.sala_combo.grid(row=2, column=1, padx=5, pady=10, sticky="ew")
+        self.sala_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
 
-        ctk.CTkLabel(scrollable_frame, text="Número Equipo:", font=get_font("normal")).grid(row=3, column=0, padx=5, pady=10, sticky="w")
+        # Número Equipo
+        ctk.CTkLabel(scrollable_frame, text="Número Equipo:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.numero_equipo_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
-        if self.original_loan_type == 'student' and self.loan_details[7] is not None:
-             self.numero_equipo_entry.insert(0, str(self.loan_details[7]))
-        self.numero_equipo_entry.grid(row=3, column=1, padx=5, pady=10, sticky="ew")
-        
-        # ... Add other fields like laboratorista, monitor, fecha_entrada, hora_salida, etc.
+        if self.original_loan_type == 'student' and ld[idx['numero_equipo']] is not None:
+            self.numero_equipo_entry.insert(0, str(ld[idx['numero_equipo']]))
+        self.numero_equipo_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
 
-        # Buttons
+        # Laboratorista
+        lab_names = ["Ninguno"] + [p[1] for p in self.laboratoristas_data]
+        ctk.CTkLabel(scrollable_frame, text="Laboratorista:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
+        self.lab_combo = ctk.CTkComboBox(scrollable_frame, values=lab_names, font=get_font("normal"), state="readonly")
+        current_lab_name = next((p[1] for p in self.laboratoristas_data if p[0] == ld[idx['laboratorista']]), "Ninguno")
+        self.lab_combo.set(current_lab_name)
+        self.lab_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
+
+        # Monitor
+        monitor_names = ["Ninguno"] + [p[1] for p in self.monitores_data]
+        ctk.CTkLabel(scrollable_frame, text="Monitor:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
+        self.monitor_combo = ctk.CTkComboBox(scrollable_frame, values=monitor_names, font=get_font("normal"), state="readonly")
+        current_monitor_name = next((p[1] for p in self.monitores_data if p[0] == ld[idx['monitor']]), "Ninguno")
+        self.monitor_combo.set(current_monitor_name)
+        self.monitor_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
+
+        # Firma
+        ctk.CTkLabel(scrollable_frame, text="Firma (ID):", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
+        self.firma_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
+        if idx['firma'] is not None and ld[idx['firma']]:
+             self.firma_entry.insert(0, ld[idx['firma']])
+        self.firma_entry.configure(state="disabled") # La firma no se edita aquí
+        self.firma_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
+
+        # Observaciones
+        ctk.CTkLabel(scrollable_frame, text="Observaciones:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="nw")
+        self.obs_textbox = ctk.CTkTextbox(scrollable_frame, height=100, font=get_font("normal"))
+        if ld[idx['observaciones']]:
+            self.obs_textbox.insert("1.0", ld[idx['observaciones']])
+        self.obs_textbox.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        row_idx += 1
+
+        # Botones
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
         button_frame.pack(side="bottom", fill="x", padx=15, pady=(0, 15))
-        save_btn = ctk.CTkButton(button_frame, text="Guardar Cambios", command=self.save)
+        save_btn = ctk.CTkButton(button_frame, text="Guardar Cambios", command=self.save, font=get_font("normal", "bold"))
         save_btn.pack(side="left", expand=True, padx=5)
-        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray")
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
         cancel_btn.pack(side="right", expand=True, padx=5)
         
+        self._center_dialog()
         self.wait_window(self)
 
+    def _center_dialog(self):
+        """Centra el diálogo en la ventana padre."""
+        self.update_idletasks()
+        parent_x = self.master.winfo_rootx()
+        parent_y = self.master.winfo_rooty()
+        parent_width = self.master.winfo_width()
+        parent_height = self.master.winfo_height()
+        dialog_width = self.winfo_width()
+        dialog_height = self.winfo_height()
+        x = parent_x + (parent_width - dialog_width) // 2
+        y = parent_y + (parent_height - dialog_height) // 2
+        self.geometry(f"+{x}+{y}")
+
     def save(self):
-        # --- Collect all data from UI ---
-        new_user_type_str = self.user_type_combo.get()
-        new_loan_type = "student" if new_user_type_str == "Estudiante" else "professor"
+        update_data = {}
+        # Validar y recolectar datos
+        selected_user_type_str = self.user_type_combo.get()
+        new_loan_type = "student" if selected_user_type_str == "Estudiante" else "professor"
         new_user_id = self.user_id_entry.get().strip()
+        new_fecha_entrada = self.fecha_entrada_entry.get().strip()
+        new_hora_salida = self.hora_salida_entry.get().strip()
         sala_nombre = self.sala_combo.get()
         numero_equipo_str = self.numero_equipo_entry.get().strip()
-        
-        # --- Validation ---
+        lab_nombre = self.lab_combo.get()
+        monitor_nombre = self.monitor_combo.get()
+        # La firma no se recolecta, ya no es editable
+        observaciones = self.obs_textbox.get("1.0", "end-1c").strip()
+
+        # Validaciones básicas
         if not new_user_id:
             messagebox.showerror("Error", "El Código/Cédula del usuario no puede estar vacío.", parent=self)
             return
+        if not new_fecha_entrada:
+            messagebox.showerror("Error", "La Fecha de Entrada es obligatoria.", parent=self)
+            return
+        try:
+            new_fecha_entrada_iso = datetime.strptime(new_fecha_entrada, '%Y-%m-%d %H:%M:%S').isoformat()
+        except ValueError:
+            messagebox.showerror("Formato de Fecha Inválido", "La Fecha de Entrada debe estar en formato YYYY-MM-DD HH:MM:SS.", parent=self)
+            return
+        # Hora salida puede ser vacía
+        new_hora_salida_val = new_hora_salida if new_hora_salida else None
 
-        # Check if the new user exists, if not, create one
-        user_exists = self.student_model.get_student_by_code_or_id(new_user_id) if new_loan_type == "student" else self.profesor_model.get_professor_by_id(new_user_id)
-        if not user_exists:
-            if not messagebox.askyesno("Crear Perfil", f"El ID '{new_user_id}' no existe. ¿Crear nuevo perfil de {new_user_type_str.lower()}?"):
-                return
-            # Create blank profile
-            (self.student_model.add_blank_student(new_user_id) if new_loan_type == "student" 
-             else self.profesor_model.add_blank_profesor(new_user_id))
-
-        # --- Recreate Loan (Delete then Add) ---
-        # This is the simplest way to handle a potential change in user type, which changes the table.
-        
-        # 1. Collect all necessary data for a new loan
+        # Sala
         sala_id = next((s[0] for s in self.salas_data if s[1] == sala_nombre), None)
-        # Note: For a full implementation, all fields (laboratorista, monitor, etc.) would be collected here.
-        # This is a simplified example focusing on the core logic change.
-        
-        # 2. Delete the old loan
-        self.loan_model.delete_loan(self.original_loan_id, self.original_loan_type)
-        
-        # 3. Create the new loan
-        success = False
-        if new_loan_type == "student":
-            if not numero_equipo_str.isdigit():
-                messagebox.showerror("Error", "Número de equipo debe ser un número para estudiantes.", parent=self)
-                # In a real scenario, you would re-add the deleted loan or handle this more gracefully.
+        # Número equipo
+        numero_equipo_val = None
+        if new_loan_type == 'student' and numero_equipo_str:
+            try:
+                numero_equipo_val = int(numero_equipo_str)
+            except ValueError:
+                messagebox.showerror("Error", "Número de equipo debe ser numérico si se proporciona.", parent=self)
                 return
-            success = self.loan_model.add_loan_student(datetime.now(), None, None, sala_id, new_user_id, int(numero_equipo_str), "Registro editado")
-        else: # Professor
-            success = self.loan_model.add_loan_professor(datetime.now(), None, None, sala_id, new_user_id, "Registro editado")
+        # Laboratorista y monitor
+        laboratorista_id = next((p[0] for p in self.laboratoristas_data if p[1] == lab_nombre), None) if lab_nombre != "Ninguno" else None
+        monitor_id = next((p[0] for p in self.monitores_data if p[1] == monitor_nombre), None) if monitor_nombre != "Ninguno" else None
 
+        # Construir update_data
+        if new_user_id != str(self.loan_details[5]):
+            update_data['usuario_id'] = new_user_id
+        if new_fecha_entrada_iso != self.loan_details[1]:
+            update_data['fecha_entrada'] = new_fecha_entrada_iso
+        if new_hora_salida_val != self.loan_details[6]:
+            update_data['hora_salida'] = new_hora_salida_val
+        if sala_id != self.loan_details[4]:
+            update_data['sala_id'] = sala_id
+        if new_loan_type == 'student' and numero_equipo_val != self.loan_details[7]:
+            update_data['numero_equipo'] = numero_equipo_val
+        if laboratorista_id != self.loan_details[2]:
+            update_data['laboratorista'] = laboratorista_id
+        if monitor_id != self.loan_details[3]:
+            update_data['monitor'] = monitor_id
+        
+        obs_idx = idx['observaciones']
+        if observaciones != (ld[obs_idx] or ''):
+            update_data['novedad' if new_loan_type == 'student' else 'observaciones'] = observaciones
+
+        if not update_data:
+            messagebox.showinfo("Sin cambios", "No se detectaron cambios para guardar.", parent=self)
+            return
+
+        success = self.loan_model.update_room_loan(self.loan_id, self.original_loan_type, update_data)
         if success:
             self.result = True
-            messagebox.showinfo("Éxito", "El préstamo ha sido actualizado/recreado.", parent=self.master)
+            messagebox.showinfo("Éxito", "El préstamo ha sido actualizado correctamente.", parent=self.master)
             self.destroy()
         else:
-            messagebox.showerror("Error", "No se pudo actualizar el préstamo.", parent=self)
+            messagebox.showerror("Error", "No se pudo actualizar el préstamo en la base de datos.", parent=self)
 
     def cancel(self):
         self.result = None
