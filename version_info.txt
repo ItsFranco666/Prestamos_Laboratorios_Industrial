@@ -18,7 +18,7 @@ VSVersionInfo(
           u'040904B0',
           [
             StringStruct(u'CompanyName', u'Universidad Distrital FJdC'),
-            StringStruct(u'FileDescription', u'Sistema de Gestión de Laboratorios'),
+            StringStruct(u'FileDescription', u'Sistema para gestionar préstamos de salas o equipos de laboratorios'),
             StringStruct(u'FileVersion', u'1.0.0.0'),
             StringStruct(u'InternalName', u'SistemaGestionLaboratorios'),
             StringStruct(u'OriginalFilename', u'Sistema de Gestion de Laboratorios.exe'),

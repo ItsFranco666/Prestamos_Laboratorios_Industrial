@@ -19,7 +19,7 @@ class DatabaseManager:
             # Running in a PyInstaller bundle
             # Use a persistent user data directory
             if sys.platform == "win32":
-                app_data_dir = os.path.join(os.environ.get('APPDATA'), "YourAppName")
+                app_data_dir = os.path.join(os.environ.get('APPDATA'), "GestionDeLaboratorios")
             elif sys.platform == "darwin":
                 app_data_dir = os.path.join(os.path.expanduser("~/Library/Application Support"), "YourAppName")
             else: # Linux and other Unix-like systems

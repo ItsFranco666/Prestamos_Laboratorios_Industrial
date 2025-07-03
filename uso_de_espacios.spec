@@ -50,7 +50,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='SistemaGestionUniversitaria',
+    name='Sistema de Gestión de Laboratorios',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
