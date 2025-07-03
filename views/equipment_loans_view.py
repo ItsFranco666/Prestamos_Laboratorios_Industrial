@@ -69,7 +69,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.user_type_combo.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
 
         # Código del Equipo (Reemplazado ComboBox por Entry)
-        ctk.CTkLabel(form_grid, text="Código del Equipo:", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(form_grid, text="Código del Equipo:*", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=10, sticky="w")
         self.equipo_code_entry = ctk.CTkEntry(form_grid, placeholder_text="Ingrese el código del equipo a prestar", font=get_font("normal"))
         self.equipo_code_entry.grid(row=1, column=1, padx=5, pady=10, sticky="ew")
 
@@ -82,7 +82,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.sala_combo.grid(row=2, column=1, padx=5, pady=10, sticky="ew")
 
         # ID Usuario (Código o Cédula)
-        ctk.CTkLabel(form_grid, text="Código/Cédula:", font=get_font("normal")).grid(row=3, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(form_grid, text="Código/Cédula:*", font=get_font("normal")).grid(row=3, column=0, padx=5, pady=10, sticky="w")
         self.user_id_entry = ctk.CTkEntry(form_grid, placeholder_text="Código de estudiante o cédula de profesor", font=get_font("normal"))
         self.user_id_entry.grid(row=3, column=1, padx=5, pady=10, sticky="ew")
 
@@ -97,7 +97,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.titulo_practica_entry.grid(row=5, column=1, padx=5, pady=10, sticky="ew")
 
         # Laboratorista
-        ctk.CTkLabel(form_grid, text="Laboratorista:", font=get_font("normal")).grid(row=6, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(form_grid, text="Laboratorista:*", font=get_font("normal")).grid(row=6, column=0, padx=5, pady=10, sticky="w")
         self.laboratoristas_data = self.personal_model.get_laboratoristas()
         lab_names = ["Seleccione..."] + [p[1] for p in self.laboratoristas_data]
         self.lab_combo = ctk.CTkComboBox(form_grid, values=lab_names, font=get_font("normal"), state="readonly")
@@ -258,41 +258,40 @@ class EquipmentLoansView(ctk.CTkFrame):
         table_container_frame.grid_rowconfigure(0, weight=1)
         table_container_frame.grid_columnconfigure(0, weight=1)
         
-        # New column order
-        columns = ("tipo_usuario", "fecha_entrega", "usuario_nombre", "equipo_desc", "titulo_practica", "fecha_devolucion", "laboratorista_entrega", "monitor_entrega", "estado_prestamo", "laboratorista_devolucion", "monitor_devolucion", "firma", "observaciones")
-        
+        # Nuevo orden de columnas: estado después de fecha_entrega, firma antes de observaciones, fecha_devolucion después de monitor_entrega
+        columns = ("tipo_usuario", "fecha_entrega", "estado_prestamo", "usuario_nombre", "equipo_desc", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "fecha_devolucion", "laboratorista_devolucion", "monitor_devolucion", "firma", "observaciones")
         self.tree = ttk.Treeview(table_container_frame, columns=columns, show="headings", style="Modern.Treeview")
         
         # Configure headers in the new order
-        self.tree.heading("tipo_usuario", text="👤 Tipo Usuario", anchor='w')
+        self.tree.heading("tipo_usuario", text="👤 Usuario", anchor='w')
         self.tree.heading("fecha_entrega", text="📅 Fecha Entrega", anchor='w')
-        self.tree.heading("usuario_nombre", text="👨‍💼 Nombre Usuario", anchor='w')
-        self.tree.heading("equipo_desc", text="🔧 Equipo", anchor='w')
+        self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
+        self.tree.heading("usuario_nombre", text="👤 Nombre Usuario", anchor='w')
+        self.tree.heading("equipo_desc", text="💻 Equipo", anchor='w')
         self.tree.heading("titulo_practica", text="📋 Título Práctica", anchor='w')
-        self.tree.heading("fecha_devolucion", text="📅 Fecha Devolución", anchor='w')
         self.tree.heading("laboratorista_entrega", text="👨‍🔬 Lab. Entrega", anchor='w')
         self.tree.heading("monitor_entrega", text="👥 Monitor Entrega", anchor='w')
-        self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
+        self.tree.heading("fecha_devolucion", text="📅 Fecha Devolución", anchor='w')
         self.tree.heading("laboratorista_devolucion", text="👨‍🔬 Lab. Devolución", anchor='w')
         self.tree.heading("monitor_devolucion", text="👥 Monitor Devolución", anchor='w')
-        self.tree.heading("firma", text="🖊️ Firma", anchor='w')
+        self.tree.heading("firma", text="✏️ Firma", anchor='w')
         self.tree.heading("observaciones", text="📝 Observaciones", anchor='w')
-
+        
         # Configure column widths in the new order
-        self.tree.column("tipo_usuario", width=120, stretch=False, minwidth=100)
-        self.tree.column("fecha_entrega", width=150, stretch=False, minwidth=130)
-        self.tree.column("usuario_nombre", width=180, stretch=False, minwidth=150)
-        self.tree.column("equipo_desc", width=220, stretch=False, minwidth=180)
-        self.tree.column("titulo_practica", width=200, stretch=False, minwidth=160)
-        self.tree.column("fecha_devolucion", width=150, stretch=False, minwidth=130, anchor='center')
-        self.tree.column("laboratorista_entrega", width=150, stretch=False, minwidth=120)
-        self.tree.column("monitor_entrega", width=150, stretch=False, minwidth=120)
+        self.tree.column("tipo_usuario", width=100, stretch=False, minwidth=100)
+        self.tree.column("fecha_entrega", width=150, stretch=False, minwidth=130, anchor='center')
         self.tree.column("estado_prestamo", width=100, stretch=False, minwidth=80)
-        self.tree.column("laboratorista_devolucion", width=150, stretch=False, minwidth=120)
-        self.tree.column("monitor_devolucion", width=150, stretch=False, minwidth=120)
+        self.tree.column("usuario_nombre", width=230, stretch=False, minwidth=190)
+        self.tree.column("equipo_desc", width=220, stretch=False, minwidth=180)
+        self.tree.column("titulo_practica", width=190, stretch=False, minwidth=180)
+        self.tree.column("laboratorista_entrega", width=260, stretch=False, minwidth=200)
+        self.tree.column("monitor_entrega", width=260, stretch=False, minwidth=200)
+        self.tree.column("fecha_devolucion", width=180, stretch=False, minwidth=150, anchor='center')
+        self.tree.column("laboratorista_devolucion", width=260, stretch=False, minwidth=200)
+        self.tree.column("monitor_devolucion", width=260, stretch=False, minwidth=200)
         self.tree.column("firma", width=120, stretch=False, minwidth=100)
         self.tree.column("observaciones", width=300, stretch=True, minwidth=200)
-
+        
         v_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.yview, corner_radius=8, width=16)
         h_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.xview, orientation="horizontal", corner_radius=8, height=16)
         
@@ -311,10 +310,11 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.actions_frame.pack(pady=(15, 0), padx=0, fill="x")
         self.return_btn = ctk.CTkButton(self.actions_frame, text="Registrar Devolución", command=self._return_selected_equipment, state="disabled", font=get_font("normal"), corner_radius=8, height=35, fg_color=("#ffa154", "#c95414"), hover_color=("#ff8c33", "#b34a0e"), text_color=("#222","#fff"))
         self.return_btn.pack(side="left", padx=8, pady=8)
+        # Botones de editar y eliminar alineados a la derecha
         self.edit_btn = ctk.CTkButton(self.actions_frame, text="Editar Préstamo", command=self._edit_selected_loan, state="disabled", font=get_font("normal"), corner_radius=8, height=35, text_color=("#222","#fff"))
-        self.edit_btn.pack(side="left", padx=8, pady=8)
         self.delete_btn = ctk.CTkButton(self.actions_frame, text="Eliminar Préstamo", command=self._delete_selected_loan, state="disabled", fg_color=("#b3261e", "#e4675f"), hover_color=("#8b1e17", "#b8514a"), font=get_font("normal"), corner_radius=8, height=35, text_color=("#222","#fff"))
-        self.delete_btn.pack(side="left", padx=8, pady=8)
+        self.delete_btn.pack(side="right", padx=8, pady=8)
+        self.edit_btn.pack(side="right", padx=8, pady=8)
         
         self.tree.bind("<<TreeviewSelect>>", self._on_loan_select)
         self._on_loan_select()
@@ -344,26 +344,22 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.tag_configure('alternate', background=tag_config['alternate'][0])
 
         for i, loan in enumerate(loans):
-            # Unpack the 18 columns returned by the model
             loan_id, tipo, nombre, equipo_desc, f_entrega, f_devolucion, lab_ent, mon_ent, lab_dev, mon_dev, titulo_practica, estado_prestamo, obs, user_id, loan_type, equipo_codigo, sala_id, firma_db = loan
-            
             f_entrega_str = datetime.fromisoformat(f_entrega).strftime('%Y-%m-%d %H:%M') if f_entrega else 'N/A'
             f_devolucion_str = datetime.fromisoformat(f_devolucion).strftime('%Y-%m-%d %H:%M') if f_devolucion else "PENDIENTE"
-            
-            # Values tuple reordered to match the new column layout
             values = (
-                tipo, 
-                f_entrega_str, 
-                nombre, 
-                equipo_desc, 
-                titulo_practica or '', 
-                f_devolucion_str, 
-                lab_ent or 'N/A', 
+                tipo,
+                f_entrega_str,
+                estado_prestamo,
+                nombre,
+                equipo_desc,
+                titulo_practica or '',
+                lab_ent or 'N/A',
                 mon_ent or 'N/A',
-                estado_prestamo, 
-                lab_dev or 'N/A', 
-                mon_dev or 'N/A', 
-                firma_db or '', 
+                f_devolucion_str,
+                lab_dev or 'N/A',
+                mon_dev or 'N/A',
+                firma_db or '',
                 obs or ''
             )
             
@@ -508,13 +504,13 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
         main_frame.columnconfigure(1, weight=1)
 
         # Fecha de devolución
-        ctk.CTkLabel(main_frame, text="Fecha de Devolución:", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(main_frame, text="Fecha de Devolución:*", font=get_font("normal")).grid(row=0, column=0, padx=5, pady=10, sticky="w")
         self.fecha_devolucion_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
         self.fecha_devolucion_entry.insert(0, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.fecha_devolucion_entry.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
 
         # Laboratorista de devolución
-        ctk.CTkLabel(main_frame, text="Laboratorista Devolución:", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(main_frame, text="Laboratorista Devolución:*", font=get_font("normal")).grid(row=1, column=0, padx=5, pady=10, sticky="w")
         self.laboratoristas_data = self.personal_model.get_laboratoristas()
         lab_names = ["Seleccione..."] + [p[1] for p in self.laboratoristas_data]
         self.lab_combo = ctk.CTkComboBox(main_frame, values=lab_names, font=get_font("normal"), state="readonly")
@@ -522,7 +518,7 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
         self.lab_combo.grid(row=1, column=1, padx=5, pady=10, sticky="ew")
 
         # Monitor de devolución (opcional)
-        ctk.CTkLabel(main_frame, text="Monitor Devolución\n(Opcional):", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(main_frame, text="Monitor Devolución:", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="w")
         self.monitores_data = self.personal_model.get_monitores()
         monitor_names = ["Seleccione..."] + [p[1] for p in self.monitores_data]
         self.monitor_combo = ctk.CTkComboBox(main_frame, values=monitor_names, font=get_font("normal"), state="readonly")
@@ -531,14 +527,14 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
 
         # Documento de quien devuelve (automático y no editable)
         borrower_id = self.loan_data[13] # Índice 13 es 'usuario_id'
-        ctk.CTkLabel(main_frame, text="Documento Devolvente:", font=get_font("normal")).grid(row=3, column=0, padx=5, pady=10, sticky="w")
+        ctk.CTkLabel(main_frame, text="Documento Devolvente:*", font=get_font("normal")).grid(row=3, column=0, padx=5, pady=10, sticky="w")
         self.doc_devolvente_entry = ctk.CTkEntry(main_frame, font=get_font("normal"))
         self.doc_devolvente_entry.insert(0, borrower_id)
         self.doc_devolvente_entry.configure(state="disabled") # Hacer el campo de solo lectura
         self.doc_devolvente_entry.grid(row=3, column=1, padx=5, pady=10, sticky="ew")
 
         # Observaciones de devolución
-        ctk.CTkLabel(main_frame, text="Observaciones\n(Devolución):", font=get_font("normal")).grid(row=4, column=0, padx=5, pady=10, sticky="nw")
+        ctk.CTkLabel(main_frame, text="Observaciones:", font=get_font("normal")).grid(row=4, column=0, padx=5, pady=10, sticky="nw")
         self.obs_textbox = ctk.CTkTextbox(main_frame, height=80, font=get_font("normal"))
         self.obs_textbox.grid(row=4, column=1, padx=5, pady=10, sticky="ew")
         if self.loan_data[12]: # Cargar observaciones existentes si las hay

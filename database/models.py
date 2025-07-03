@@ -620,61 +620,105 @@ class RoomLoanModel:
         finally:
             conn.close()
 
-    def get_room_loans(self, date_filter=None):
+    def get_room_loans(self, search_term="", user_type_filter="Todos", status_filter="Todos", date_filter=None):
+        """
+        Fetches all room loans with comprehensive filtering capabilities.
+        - search_term: Filters by user name or room name.
+        - user_type_filter: Filters by 'Estudiante' or 'Profesor'.
+        - status_filter: Filters by 'En Préstamo' or 'Finalizado'.
+        - date_filter: Filters by a specific date ('YYYY-MM-DD').
+        """
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        base_query_student = '''
+        
+        # Base queries with all necessary columns and joins
+        student_query = '''
             SELECT pse.id, 'Estudiante' as tipo_usuario, e.nombre as usuario_nombre, s.nombre as sala_nombre, 
-                   pse.fecha_entrada, pse.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, pse.novedad as observaciones, pse.estudiante_id as usuario_id, 'student' as loan_type
+                   pse.fecha_entrada, pse.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, 
+                   pse.novedad as observaciones, pse.estudiante_id as usuario_id, 'student' as loan_type, pse.numero_equipo,
+                   CASE WHEN pse.hora_salida IS NULL THEN 'En Préstamo' ELSE 'Finalizado' END as estado_prestamo,
+                   pse.firma_estudiante
             FROM prestamos_salas_estudiantes pse
             JOIN estudiantes e ON pse.estudiante_id = e.codigo
             JOIN salas s ON pse.sala_id = s.id
             LEFT JOIN personal_laboratorio pl_lab ON pse.laboratorista = pl_lab.id
             LEFT JOIN personal_laboratorio pl_mon ON pse.monitor = pl_mon.id
         '''
-        base_query_professor = '''
+        professor_query = '''
             SELECT psp.id, 'Profesor' as tipo_usuario, p.nombre as usuario_nombre, s.nombre as sala_nombre,
-                   psp.fecha_entrada, psp.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, psp.observaciones, psp.profesor_id as usuario_id, 'professor' as loan_type
+                   psp.fecha_entrada, psp.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, 
+                   psp.observaciones, psp.profesor_id as usuario_id, 'professor' as loan_type, NULL as numero_equipo,
+                   CASE WHEN psp.hora_salida IS NULL THEN 'En Préstamo' ELSE 'Finalizado' END as estado_prestamo,
+                   psp.firma_profesor
             FROM prestamos_salas_profesores psp
             JOIN profesores p ON psp.profesor_id = p.cedula
             JOIN salas s ON psp.sala_id = s.id
             LEFT JOIN personal_laboratorio pl_lab ON psp.laboratorista = pl_lab.id
             LEFT JOIN personal_laboratorio pl_mon ON psp.monitor = pl_mon.id
         '''
-        params = []
+
+        # Dynamically build WHERE clauses based on filters
+        student_where = []
+        professor_where = []
+        student_params = []
+        professor_params = []
+
+        if search_term:
+            search_like = f'%{search_term}%'
+            student_where.append("(e.nombre LIKE ? OR s.nombre LIKE ? OR CAST(pse.numero_equipo AS TEXT) LIKE ?)")
+            professor_where.append("(p.nombre LIKE ? OR s.nombre LIKE ?)")
+            student_params.extend([search_like, search_like, search_like])
+            professor_params.extend([search_like, search_like])
+
+        status_map = {'En Préstamo': 'IS NULL', 'Finalizado': 'IS NOT NULL'}
+        if status_filter in status_map:
+            student_where.append(f"pse.hora_salida {status_map[status_filter]}")
+            professor_where.append(f"psp.hora_salida {status_map[status_filter]}")
+        
         if date_filter:
-            # Calificamos la columna `fecha_entrada` para evitar ambigüedades
-            base_query_student += " WHERE DATE(pse.fecha_entrada) = ?"
-            base_query_professor += " WHERE DATE(psp.fecha_entrada) = ?"
-            params.extend([date_filter, date_filter])
-        
-        # Se eliminaron los paréntesis externos en la consulta UNION para mayor compatibilidad
-        query = f"{base_query_student} UNION ALL {base_query_professor} ORDER BY fecha_entrada DESC"
-        
-        try:
-            cursor.execute(query, params)
-            loans = cursor.fetchall()
-        except sqlite3.OperationalError as e:
-            print("--- FAILED SQL QUERY ---")
-            print(f"Query: {query}")
-            print(f"Params: {params}")
-            print(f"Error: {e}")
-            raise e # Volver a lanzar la excepción para que el programa falle y muestre el error
+            student_where.append("DATE(pse.fecha_entrada) = ?")
+            professor_where.append("DATE(psp.fecha_entrada) = ?")
+            student_params.append(date_filter)
+            professor_params.append(date_filter)
+
+        if student_where:
+            student_query += " WHERE " + " AND ".join(student_where)
+        if professor_where:
+            professor_query += " WHERE " + " AND ".join(professor_where)
+
+        # Decide which queries to execute
+        queries_to_run = []
+        if user_type_filter == 'Estudiante':
+            queries_to_run.append((student_query, student_params))
+        elif user_type_filter == 'Profesor':
+            queries_to_run.append((professor_query, professor_params))
+        else: # "Todos"
+            queries_to_run.append((student_query, student_params))
+            queries_to_run.append((professor_query, professor_params))
+
+        all_loans = []
+        for query, params in queries_to_run:
+            try:
+                cursor.execute(query, params)
+                all_loans.extend(cursor.fetchall())
+            except sqlite3.Error as e:
+                print(f"Database error on room loan fetch: {e}")
 
         conn.close()
-        return loans
+        all_loans.sort(key=lambda x: x[4], reverse=True) # Sort by fecha_entrada DESC
+        return all_loans
 
     def get_room_loan_details(self, loan_id, loan_type):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         if loan_type == 'student':
             cursor.execute('''
-                SELECT id, fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, numero_equipo, novedad 
+                SELECT id, fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, numero_equipo, firma_estudiante, novedad 
                 FROM prestamos_salas_estudiantes WHERE id = ?
             ''', (loan_id,))
         elif loan_type == 'professor':
             cursor.execute('''
-                SELECT id, fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, observaciones 
+                SELECT id, fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones 
                 FROM prestamos_salas_profesores WHERE id = ?
             ''', (loan_id,))
         else:
@@ -684,7 +728,7 @@ class RoomLoanModel:
         conn.close()
         return details
 
-    def update_room_loan_exit(self, loan_id, loan_type, hora_salida, observaciones, firma=None, numero_equipo=None):
+    def update_room_loan_exit(self, loan_id, loan_type, hora_salida, observaciones, firma=None):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -706,6 +750,55 @@ class RoomLoanModel:
             return True
         except sqlite3.Error as e:
             print(f"Error updating room loan exit: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_room_loan(self, loan_id, loan_type, update_data):
+        """Generic method to update any field in a room loan record."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        table_name = "prestamos_salas_estudiantes" if loan_type == 'student' else "prestamos_salas_profesores"
+        
+        # Map generic 'usuario_id' to the correct DB column name
+        if 'usuario_id' in update_data:
+            if loan_type == 'student':
+                update_data['estudiante_id'] = update_data.pop('usuario_id')
+            else: # professor
+                update_data['profesor_id'] = update_data.pop('usuario_id')
+        
+        if not update_data:
+            return True # No changes to save
+
+        set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
+        params = list(update_data.values())
+        params.append(loan_id)
+        
+        query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
+        
+        try:
+            cursor.execute(query, params)
+            conn.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f"Error updating room loan: {e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
+    def delete_loan(self, loan_id, loan_type):
+        """Deletes a room loan from the database."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        table_name = "prestamos_salas_estudiantes" if loan_type == 'student' else "prestamos_salas_profesores"
+        try:
+            cursor.execute(f'DELETE FROM {table_name} WHERE id = ?', (loan_id,))
+            conn.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f"Error deleting room loan: {e}")
+            conn.rollback()
             return False
         finally:
             conn.close()

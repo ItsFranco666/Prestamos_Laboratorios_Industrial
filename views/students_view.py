@@ -227,7 +227,15 @@ class StudentsView(ctk.CTkFrame):
         # Los valores ahora están limpios, sin necesidad de remover iconos
         codigo = int(tree_values[0])
         nombre = tree_values[1]
-        cedula = int(tree_values[2])
+        # Manejar el caso en que la cédula sea 'None' o vacía
+        cedula_str = tree_values[2]
+        if cedula_str in (None, '', 'None'):
+            cedula = None
+        else:
+            try:
+                cedula = int(cedula_str)
+            except ValueError:
+                cedula = None
         proyecto = tree_values[3]
         
         return (codigo, nombre, cedula, proyecto)
@@ -427,7 +435,7 @@ class StudentDialog(ctk.CTkToplevel):
         if cedula_str:
             # Validación de tipo de dato numérico.
             try:
-                cedula = int(codigo_str)
+                cedula = int(cedula_str)
             except ValueError:
                 messagebox.showerror("Error de Validación", "La cédula debe ser un número entero.", parent=self)
                 return
