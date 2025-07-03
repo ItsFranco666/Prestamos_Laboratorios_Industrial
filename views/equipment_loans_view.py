@@ -30,10 +30,10 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.nav_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.nav_frame.pack(pady=(0, 15), padx=0, fill="x")
 
-        self.new_loan_btn = ctk.CTkButton(self.nav_frame, text="Nuevo Préstamo", command=self._show_new_loan_view, font=get_font("normal", "bold"))
+        self.new_loan_btn = ctk.CTkButton(self.nav_frame, text="Nuevo Préstamo", command=self._show_new_loan_view, font=get_font("normal", "bold"), text_color=("#222","#fff"))
         self.new_loan_btn.pack(side="left", padx=(0, 5))
 
-        self.history_btn = ctk.CTkButton(self.nav_frame, text="Historial de Préstamos", command=self._show_history_view, font=get_font("normal", "bold"))
+        self.history_btn = ctk.CTkButton(self.nav_frame, text="Historial de Préstamos", command=self._show_history_view, font=get_font("normal", "bold"), text_color=("#222","#fff"))
         self.history_btn.pack(side="left", padx=5)
 
         # Frame principal para el contenido
@@ -46,8 +46,8 @@ class EquipmentLoansView(ctk.CTkFrame):
 
     def _show_new_loan_view(self):
         self._clear_content_frame()
-        self.new_loan_btn.configure(fg_color=("#ffa154", "#c95414"))
-        self.history_btn.configure(fg_color=("gray70", "gray30"))
+        self.new_loan_btn.configure(fg_color=("#ffa154", "#c95414"), hover_color=("#ff8c33", "#b34a0e"))
+        self.history_btn.configure(fg_color=("#f5f5f5", "#232323"), hover_color=("#ffd3a8", "#9c6d41"))
 
         # Título independiente del formulario (similar a StudentsView)
         title = ctk.CTkLabel(self.content_frame, text="Registrar Nuevo Préstamo de Equipo", font=get_font("title", "bold"))
@@ -218,8 +218,8 @@ class EquipmentLoansView(ctk.CTkFrame):
 
     def _show_history_view(self):
         self._clear_content_frame()
-        self.history_btn.configure(fg_color=("#ffa154", "#c95414"))
-        self.new_loan_btn.configure(fg_color=("gray70", "gray30"))
+        self.history_btn.configure(fg_color=("#ffa154", "#c95414"), hover_color=("#ff8c33", "#b34a0e"))
+        self.new_loan_btn.configure(fg_color=("#f5f5f5", "#232323"), hover_color=("#ffd3a8", "#9c6d41"))
         
         title = ctk.CTkLabel(self.content_frame, text="Historial de Préstamos de Equipos", font=get_font("title", "bold"))
         title.pack(pady=(10, 10))
@@ -309,11 +309,11 @@ class EquipmentLoansView(ctk.CTkFrame):
         
         self.actions_frame = ctk.CTkFrame(self.content_frame, corner_radius=12)
         self.actions_frame.pack(pady=(15, 0), padx=0, fill="x")
-        self.return_btn = ctk.CTkButton(self.actions_frame, text="Registrar Devolución", command=self._return_selected_equipment, state="disabled", font=get_font("normal"), corner_radius=8, height=35)
+        self.return_btn = ctk.CTkButton(self.actions_frame, text="Registrar Devolución", command=self._return_selected_equipment, state="disabled", font=get_font("normal"), corner_radius=8, height=35, fg_color=("#ffa154", "#c95414"), hover_color=("#ff8c33", "#b34a0e"), text_color=("#222","#fff"))
         self.return_btn.pack(side="left", padx=8, pady=8)
-        self.edit_btn = ctk.CTkButton(self.actions_frame, text="Editar Préstamo", command=self._edit_selected_loan, state="disabled", font=get_font("normal"), corner_radius=8, height=35)
+        self.edit_btn = ctk.CTkButton(self.actions_frame, text="Editar Préstamo", command=self._edit_selected_loan, state="disabled", font=get_font("normal"), corner_radius=8, height=35, text_color=("#222","#fff"))
         self.edit_btn.pack(side="left", padx=8, pady=8)
-        self.delete_btn = ctk.CTkButton(self.actions_frame, text="Eliminar Préstamo", command=self._delete_selected_loan, state="disabled", fg_color=("#b3261e", "#e4675f"), hover_color=("#8b1e17", "#b8514a"), font=get_font("normal"), corner_radius=8, height=35)
+        self.delete_btn = ctk.CTkButton(self.actions_frame, text="Eliminar Préstamo", command=self._delete_selected_loan, state="disabled", fg_color=("#b3261e", "#e4675f"), hover_color=("#8b1e17", "#b8514a"), font=get_font("normal"), corner_radius=8, height=35, text_color=("#222","#fff"))
         self.delete_btn.pack(side="left", padx=8, pady=8)
         
         self.tree.bind("<<TreeviewSelect>>", self._on_loan_select)

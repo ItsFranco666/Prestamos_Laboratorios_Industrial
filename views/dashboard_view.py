@@ -13,7 +13,7 @@ from database.models import DashboardModel
 
 class DashboardView(ctk.CTkScrollableFrame):
     def __init__(self, parent, main_window=None):
-        super().__init__(parent, fg_color="transparent")
+        super().__init__(parent, fg_color=("#f3f4f6", "#232323"))
         self.parent = parent
         self.main_window = main_window
         self.dashboard_model = DashboardModel()
@@ -225,7 +225,7 @@ class DashboardView(ctk.CTkScrollableFrame):
         # Empty state label (se gestionará su visibilidad en update_active_loans)
         self.no_loans_label = ctk.CTkLabel(
             table_frame,
-            text="📋 No hay préstamos activos",
+            text="No hay préstamos activos",
             font=get_font("normal"),
             text_color=("#888888", "#aaaaaa")
         )
