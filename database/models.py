@@ -620,18 +620,15 @@ class RoomLoanModel:
         finally:
             conn.close()
 
-    def get_room_loans(self, search_term="", user_type_filter="Todos", status_filter="Todos", date_filter=None):
+    def get_room_loans(self, search_term="", user_type_filter="Todos", status_filter="Todos", date_filter=None, sala_filter_id=None):
         """
         Fetches all room loans with comprehensive filtering capabilities.
-        - search_term: Filters by user name or room name.
-        - user_type_filter: Filters by 'Estudiante' or 'Profesor'.
-        - status_filter: Filters by 'En Préstamo' or 'Finalizado'.
-        - date_filter: Filters by a specific date ('YYYY-MM-DD').
+        - sala_filter_id: Filters by a specific room ID.
         """
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
-        # Base queries with all necessary columns and joins
+        # ... (Base queries remain the same) ...
         student_query = '''
             SELECT pse.id, 'Estudiante' as tipo_usuario, e.nombre as usuario_nombre, s.nombre as sala_nombre, 
                    pse.fecha_entrada, pse.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, 
@@ -664,12 +661,14 @@ class RoomLoanModel:
         professor_params = []
 
         if search_term:
+            # ... (search term logic remains the same) ...
             search_like = f'%{search_term}%'
             student_where.append("(e.nombre LIKE ? OR s.nombre LIKE ? OR CAST(pse.numero_equipo AS TEXT) LIKE ?)")
             professor_where.append("(p.nombre LIKE ? OR s.nombre LIKE ?)")
             student_params.extend([search_like, search_like, search_like])
             professor_params.extend([search_like, search_like])
 
+        # ... (status and date filter logic remains the same) ...
         status_map = {'En Préstamo': 'IS NULL', 'Finalizado': 'IS NOT NULL'}
         if status_filter in status_map:
             student_where.append(f"pse.hora_salida {status_map[status_filter]}")
@@ -681,12 +680,19 @@ class RoomLoanModel:
             student_params.append(date_filter)
             professor_params.append(date_filter)
 
+        # ADDED: Room filter logic
+        if sala_filter_id:
+            student_where.append("pse.sala_id = ?")
+            professor_where.append("psp.sala_id = ?")
+            student_params.append(sala_filter_id)
+            professor_params.append(sala_filter_id)
+
         if student_where:
             student_query += " WHERE " + " AND ".join(student_where)
         if professor_where:
             professor_query += " WHERE " + " AND ".join(professor_where)
 
-        # Decide which queries to execute
+        # ... (Rest of the method remains the same) ...
         queries_to_run = []
         if user_type_filter == 'Estudiante':
             queries_to_run.append((student_query, student_params))
