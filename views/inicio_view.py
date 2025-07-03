@@ -290,8 +290,13 @@ class MainWindow(ctk.CTk):
 
     def set_app_icon(self):
         try:
-            icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico")
-            icon_path_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.png")
+            # When running as a PyInstaller executable, sys._MEIPASS is the path to the temp folder
+            # where bundled files are extracted.
+            # Otherwise, it's the directory of the script.
+            base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+            
+            icon_path_ico = os.path.join(base_path, "..", "assets", "app_icon.ico")
+            icon_path_png = os.path.join(base_path, "..", "assets", "app_icon.png")
             
             final_icon_path = None
             if sys.platform == "win32" and os.path.exists(icon_path_ico):

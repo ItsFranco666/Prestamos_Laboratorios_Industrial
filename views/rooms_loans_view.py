@@ -561,35 +561,29 @@ class RoomEditDialog(ctk.CTkToplevel):
         ctk.CTkLabel(scrollable_frame, text="Código/Cédula Usuario:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.user_id_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
         # --- Corrección: Mapear índices según tipo de préstamo ---
-        ld = self.loan_details
-        if self.original_loan_type == 'student':
-            # id, fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, numero_equipo, firma_estudiante, novedad
-            idx = {
-                'id': 0, 'fecha_entrada': 1, 'laboratorista': 2, 'monitor': 3, 'sala_id': 4, 'usuario_id': 5,
-                'hora_salida': 6, 'numero_equipo': 7, 'firma': 8, 'observaciones': 9
-            }
-        else:
-            # id, fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones
-            idx = {
-                'id': 0, 'fecha_entrada': 1, 'laboratorista': 2, 'monitor': 3, 'sala_id': 4, 'usuario_id': 5,
-                'hora_salida': 6, 'firma': 7, 'observaciones': 8, 'numero_equipo': None
-            }
-        self.user_id_entry.insert(0, ld[idx['usuario_id']])
+        self.idx = {
+            'id': 0, 'fecha_entrada': 1, 'laboratorista': 2, 'monitor': 3, 'sala_id': 4, 'usuario_id': 5,
+            'hora_salida': 6, 'numero_equipo': 7, 'firma': 8, 'observaciones': 9
+        } if self.original_loan_type == 'student' else {
+            'id': 0, 'fecha_entrada': 1, 'laboratorista': 2, 'monitor': 3, 'sala_id': 4, 'usuario_id': 5,
+            'hora_salida': 6, 'firma': 7, 'observaciones': 8, 'numero_equipo': None
+        }
+        self.user_id_entry.insert(0, self.loan_details[self.idx['usuario_id']])
         self.user_id_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
 
         # Fecha Entrada
         ctk.CTkLabel(scrollable_frame, text="Fecha Entrada:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.fecha_entrada_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
-        self.fecha_entrada_entry.insert(0, datetime.fromisoformat(ld[idx['fecha_entrada']]).strftime('%Y-%m-%d %H:%M:%S'))
+        self.fecha_entrada_entry.insert(0, datetime.fromisoformat(self.loan_details[self.idx['fecha_entrada']]).strftime('%Y-%m-%d %H:%M:%S'))
         self.fecha_entrada_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
 
         # Hora Salida
         ctk.CTkLabel(scrollable_frame, text="Hora Salida:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.hora_salida_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
-        if ld[idx['hora_salida']]:
-            self.hora_salida_entry.insert(0, ld[idx['hora_salida']])
+        if self.loan_details[self.idx['hora_salida']]:
+            self.hora_salida_entry.insert(0, self.loan_details[self.idx['hora_salida']])
         self.hora_salida_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
 
@@ -597,7 +591,7 @@ class RoomEditDialog(ctk.CTkToplevel):
         ctk.CTkLabel(scrollable_frame, text="Sala:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         sala_names = ["Ninguna"] + [s[1] for s in self.salas_data]
         self.sala_combo = ctk.CTkComboBox(scrollable_frame, values=sala_names, font=get_font("normal"), state="readonly")
-        current_sala_name = next((s[1] for s in self.salas_data if s[0] == ld[idx['sala_id']]), "Ninguna")
+        current_sala_name = next((s[1] for s in self.salas_data if s[0] == self.loan_details[self.idx['sala_id']]), "Ninguna")
         self.sala_combo.set(current_sala_name)
         self.sala_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
@@ -605,8 +599,8 @@ class RoomEditDialog(ctk.CTkToplevel):
         # Número Equipo
         ctk.CTkLabel(scrollable_frame, text="Número Equipo:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.numero_equipo_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
-        if self.original_loan_type == 'student' and ld[idx['numero_equipo']] is not None:
-            self.numero_equipo_entry.insert(0, str(ld[idx['numero_equipo']]))
+        if self.original_loan_type == 'student' and self.loan_details[self.idx['numero_equipo']] is not None:
+            self.numero_equipo_entry.insert(0, str(self.loan_details[self.idx['numero_equipo']]))
         self.numero_equipo_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
 
@@ -614,7 +608,7 @@ class RoomEditDialog(ctk.CTkToplevel):
         lab_names = ["Ninguno"] + [p[1] for p in self.laboratoristas_data]
         ctk.CTkLabel(scrollable_frame, text="Laboratorista:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.lab_combo = ctk.CTkComboBox(scrollable_frame, values=lab_names, font=get_font("normal"), state="readonly")
-        current_lab_name = next((p[1] for p in self.laboratoristas_data if p[0] == ld[idx['laboratorista']]), "Ninguno")
+        current_lab_name = next((p[1] for p in self.laboratoristas_data if p[0] == self.loan_details[self.idx['laboratorista']]), "Ninguno")
         self.lab_combo.set(current_lab_name)
         self.lab_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
@@ -623,7 +617,7 @@ class RoomEditDialog(ctk.CTkToplevel):
         monitor_names = ["Ninguno"] + [p[1] for p in self.monitores_data]
         ctk.CTkLabel(scrollable_frame, text="Monitor:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.monitor_combo = ctk.CTkComboBox(scrollable_frame, values=monitor_names, font=get_font("normal"), state="readonly")
-        current_monitor_name = next((p[1] for p in self.monitores_data if p[0] == ld[idx['monitor']]), "Ninguno")
+        current_monitor_name = next((p[1] for p in self.monitores_data if p[0] == self.loan_details[self.idx['monitor']]), "Ninguno")
         self.monitor_combo.set(current_monitor_name)
         self.monitor_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
@@ -631,8 +625,8 @@ class RoomEditDialog(ctk.CTkToplevel):
         # Firma
         ctk.CTkLabel(scrollable_frame, text="Firma (ID):", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
         self.firma_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
-        if idx['firma'] is not None and ld[idx['firma']]:
-             self.firma_entry.insert(0, ld[idx['firma']])
+        if self.loan_details[self.idx['firma']] is not None and self.loan_details[self.idx['firma']]:
+             self.firma_entry.insert(0, self.loan_details[self.idx['firma']])
         self.firma_entry.configure(state="disabled") # La firma no se edita aquí
         self.firma_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
@@ -640,8 +634,8 @@ class RoomEditDialog(ctk.CTkToplevel):
         # Observaciones
         ctk.CTkLabel(scrollable_frame, text="Observaciones:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="nw")
         self.obs_textbox = ctk.CTkTextbox(scrollable_frame, height=100, font=get_font("normal"))
-        if ld[idx['observaciones']]:
-            self.obs_textbox.insert("1.0", ld[idx['observaciones']])
+        if self.loan_details[self.idx['observaciones']]:
+            self.obs_textbox.insert("1.0", self.loan_details[self.idx['observaciones']])
         self.obs_textbox.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
 
@@ -714,23 +708,23 @@ class RoomEditDialog(ctk.CTkToplevel):
         monitor_id = next((p[0] for p in self.monitores_data if p[1] == monitor_nombre), None) if monitor_nombre != "Ninguno" else None
 
         # Construir update_data
-        if new_user_id != str(self.loan_details[5]):
+        if new_user_id != str(self.loan_details[self.idx['usuario_id']]):
             update_data['usuario_id'] = new_user_id
-        if new_fecha_entrada_iso != self.loan_details[1]:
+        if new_fecha_entrada_iso != self.loan_details[self.idx['fecha_entrada']]:
             update_data['fecha_entrada'] = new_fecha_entrada_iso
-        if new_hora_salida_val != self.loan_details[6]:
+        if new_hora_salida_val != self.loan_details[self.idx['hora_salida']]:
             update_data['hora_salida'] = new_hora_salida_val
-        if sala_id != self.loan_details[4]:
+        if sala_id != self.loan_details[self.idx['sala_id']]:
             update_data['sala_id'] = sala_id
-        if new_loan_type == 'student' and numero_equipo_val != self.loan_details[7]:
+        if new_loan_type == 'student' and numero_equipo_val != self.loan_details[self.idx['numero_equipo']]:
             update_data['numero_equipo'] = numero_equipo_val
-        if laboratorista_id != self.loan_details[2]:
+        if laboratorista_id != self.loan_details[self.idx['laboratorista']]:
             update_data['laboratorista'] = laboratorista_id
-        if monitor_id != self.loan_details[3]:
+        if monitor_id != self.loan_details[self.idx['monitor']]:
             update_data['monitor'] = monitor_id
         
-        obs_idx = idx['observaciones']
-        if observaciones != (ld[obs_idx] or ''):
+        obs_idx = self.idx['observaciones']
+        if observaciones != (self.loan_details[obs_idx] or ''):
             update_data['novedad' if new_loan_type == 'student' else 'observaciones'] = observaciones
 
         if not update_data:

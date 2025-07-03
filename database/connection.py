@@ -1,9 +1,46 @@
 import sqlite3
+import os
+import sys
+import shutil
 
 class DatabaseManager:
-    def __init__(self, db_path="uso_de_espacios.db"):
-        self.db_path = db_path
+    def __init__(self, db_name="uso_de_espacios.db"):
+        self.db_name = db_name
+        self.db_path = self._get_database_path()
         self.init_database()
+    
+    def _get_database_path(self):
+        """
+        Determines the appropriate path for the database file.
+        In a PyInstaller bundle, it will be in a persistent user data directory.
+        Otherwise, it will be in the current working directory.
+        """
+        if getattr(sys, 'frozen', False):
+            # Running in a PyInstaller bundle
+            # Use a persistent user data directory
+            if sys.platform == "win32":
+                app_data_dir = os.path.join(os.environ.get('APPDATA'), "YourAppName")
+            elif sys.platform == "darwin":
+                app_data_dir = os.path.join(os.path.expanduser("~/Library/Application Support"), "YourAppName")
+            else: # Linux and other Unix-like systems
+                app_data_dir = os.path.join(os.path.expanduser("~/.local/share"), "YourAppName")
+            
+            os.makedirs(app_data_dir, exist_ok=True)
+            db_file_path = os.path.join(app_data_dir, self.db_name)
+
+            # Check if the database already exists in the persistent location
+            if not os.path.exists(db_file_path):
+                # If not, copy it from the bundled location (sys._MEIPASS)
+                bundled_db_path = os.path.join(sys._MEIPASS, self.db_name)
+                if os.path.exists(bundled_db_path):
+                    shutil.copy2(bundled_db_path, db_file_path)
+                    print(f"Copied initial database from {bundled_db_path} to {db_file_path}")
+                else:
+                    print(f"Bundled database not found at {bundled_db_path}. A new one will be created.")
+            return db_file_path
+        else:
+            # Running as a script
+            return self.db_name # Keep it in the current directory for development
     
     def get_connection(self):
         return sqlite3.connect(self.db_path)
