@@ -131,7 +131,7 @@ class DatabaseManager:
                 sala_id INTEGER REFERENCES salas(id) NOT NULL,
                 estudiante_id INTEGER REFERENCES estudiantes(codigo) NOT NULL,
                 hora_salida TIME,
-                numero_equipo INTEGER,
+                equipo_codigo TEXT REFERENCES equipos(codigo),
                 firma_estudiante INTEGER,
                 novedad TEXT
             );

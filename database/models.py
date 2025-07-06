@@ -1,6 +1,5 @@
 import sqlite3
-from .connection import DatabaseManager # Corrected import
-from datetime import datetime
+from .connection import DatabaseManager
 
 class StudentModel:
     def __init__(self):
@@ -586,15 +585,15 @@ class RoomLoanModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
 
-    def add_loan_student(self, fecha_entrada, laboratorista_id, monitor_id, sala_id, estudiante_id, numero_equipo, observaciones):
+    def add_loan_student(self, fecha_entrada, laboratorista_id, monitor_id, sala_id, estudiante_id, equipo_codigo, observaciones):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute('''
                 INSERT INTO prestamos_salas_estudiantes 
-                (fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, numero_equipo, novedad)
+                (fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, equipo_codigo, novedad)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (fecha_entrada, laboratorista_id, monitor_id, sala_id, estudiante_id, numero_equipo, observaciones))
+            ''', (fecha_entrada, laboratorista_id, monitor_id, sala_id, estudiante_id, equipo_codigo, observaciones))
             conn.commit()
             return cursor.lastrowid
         except sqlite3.Error as e:
@@ -628,25 +627,29 @@ class RoomLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
-        # ... (Base queries remain the same) ...
         student_query = '''
             SELECT pse.id, 'Estudiante' as tipo_usuario, e.nombre as usuario_nombre, s.nombre as sala_nombre, 
                    pse.fecha_entrada, pse.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, 
-                   pse.novedad as observaciones, pse.estudiante_id as usuario_id, 'student' as loan_type, pse.numero_equipo,
+                   pse.novedad as observaciones, pse.estudiante_id as usuario_id, 'student' as loan_type, 
+                   eq.numero_equipo,
                    CASE WHEN pse.hora_salida IS NULL THEN 'En Préstamo' ELSE 'Finalizado' END as estado_prestamo,
-                   pse.firma_estudiante
+                   pse.firma_estudiante,
+                   pse.equipo_codigo
             FROM prestamos_salas_estudiantes pse
             JOIN estudiantes e ON pse.estudiante_id = e.codigo
             JOIN salas s ON pse.sala_id = s.id
+            LEFT JOIN equipos eq ON pse.equipo_codigo = eq.codigo
             LEFT JOIN personal_laboratorio pl_lab ON pse.laboratorista = pl_lab.id
             LEFT JOIN personal_laboratorio pl_mon ON pse.monitor = pl_mon.id
         '''
         professor_query = '''
             SELECT psp.id, 'Profesor' as tipo_usuario, p.nombre as usuario_nombre, s.nombre as sala_nombre,
                    psp.fecha_entrada, psp.hora_salida, pl_lab.nombre as laboratorista, pl_mon.nombre as monitor, 
-                   psp.observaciones, psp.profesor_id as usuario_id, 'professor' as loan_type, NULL as numero_equipo,
+                   psp.observaciones, psp.profesor_id as usuario_id, 'professor' as loan_type, 
+                   NULL as numero_equipo,
                    CASE WHEN psp.hora_salida IS NULL THEN 'En Préstamo' ELSE 'Finalizado' END as estado_prestamo,
-                   psp.firma_profesor
+                   psp.firma_profesor,
+                   NULL as equipo_codigo
             FROM prestamos_salas_profesores psp
             JOIN profesores p ON psp.profesor_id = p.cedula
             JOIN salas s ON psp.sala_id = s.id
@@ -654,21 +657,18 @@ class RoomLoanModel:
             LEFT JOIN personal_laboratorio pl_mon ON psp.monitor = pl_mon.id
         '''
 
-        # Dynamically build WHERE clauses based on filters
         student_where = []
         professor_where = []
         student_params = []
         professor_params = []
 
         if search_term:
-            # ... (search term logic remains the same) ...
             search_like = f'%{search_term}%'
-            student_where.append("(e.nombre LIKE ? OR s.nombre LIKE ? OR CAST(pse.numero_equipo AS TEXT) LIKE ?)")
+            student_where.append("(e.nombre LIKE ? OR s.nombre LIKE ? OR CAST(eq.numero_equipo AS TEXT) LIKE ? OR pse.equipo_codigo LIKE ?)")
             professor_where.append("(p.nombre LIKE ? OR s.nombre LIKE ?)")
-            student_params.extend([search_like, search_like, search_like])
+            student_params.extend([search_like, search_like, search_like, search_like])
             professor_params.extend([search_like, search_like])
 
-        # ... (status and date filter logic remains the same) ...
         status_map = {'En Préstamo': 'IS NULL', 'Finalizado': 'IS NOT NULL'}
         if status_filter in status_map:
             student_where.append(f"pse.hora_salida {status_map[status_filter]}")
@@ -680,7 +680,6 @@ class RoomLoanModel:
             student_params.append(date_filter)
             professor_params.append(date_filter)
 
-        # ADDED: Room filter logic
         if sala_filter_id:
             student_where.append("pse.sala_id = ?")
             professor_where.append("psp.sala_id = ?")
@@ -692,7 +691,6 @@ class RoomLoanModel:
         if professor_where:
             professor_query += " WHERE " + " AND ".join(professor_where)
 
-        # ... (Rest of the method remains the same) ...
         queries_to_run = []
         if user_type_filter == 'Estudiante':
             queries_to_run.append((student_query, student_params))
@@ -719,8 +717,12 @@ class RoomLoanModel:
         cursor = conn.cursor()
         if loan_type == 'student':
             cursor.execute('''
-                SELECT id, fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, numero_equipo, firma_estudiante, novedad 
-                FROM prestamos_salas_estudiantes WHERE id = ?
+                SELECT pse.id, pse.fecha_entrada, pse.laboratorista, pse.monitor, pse.sala_id,
+                       pse.estudiante_id, pse.hora_salida, pse.equipo_codigo, eq.numero_equipo,
+                       pse.firma_estudiante, pse.novedad
+                FROM prestamos_salas_estudiantes pse
+                LEFT JOIN equipos eq ON pse.equipo_codigo = eq.codigo
+                WHERE pse.id = ?
             ''', (loan_id,))
         elif loan_type == 'professor':
             cursor.execute('''
@@ -1155,6 +1157,35 @@ class EquiposModel:
             SELECT codigo, sala_id, numero_equipo, descripcion, estado, observaciones
             FROM equipos WHERE codigo = ?
         ''', (codigo,))
+        item = cursor.fetchone()
+        conn.close()
+        return item
+
+    def get_equipo_by_identifier(self, sala_id, codigo=None, numero_equipo=None):
+        """
+        Retrieves a single piece of equipment by its code, or by its number
+        within a specific room.
+        """
+        if not codigo and (numero_equipo is None):
+            return None
+            
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        
+        query = "SELECT codigo, sala_id, numero_equipo, descripcion, estado, observaciones FROM equipos WHERE "
+        params = []
+
+        if codigo:
+            query += "codigo = ?"
+            params.append(codigo)
+        elif numero_equipo is not None and sala_id:
+            query += "numero_equipo = ? AND sala_id = ?"
+            params.extend([numero_equipo, sala_id])
+        else:
+            conn.close()
+            return None
+
+        cursor.execute(query, tuple(params))
         item = cursor.fetchone()
         conn.close()
         return item
