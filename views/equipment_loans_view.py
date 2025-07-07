@@ -671,7 +671,7 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         
         # Tipo de Usuario (para validación)
         ctk.CTkLabel(scrollable_frame, text="Tipo de Usuario:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
-        self.user_type_combo = ctk.CTkComboBox(scrollable_frame, values=["Estudiante", "Profesor"], font=get_font("normal"), state="readonly")
+        self.user_type_combo = ctk.CTkComboBox(scrollable_frame, values=["Estudiante", "Profesor"], font=get_font("normal"), state="readonly", command=self._on_user_type_change_edit)
         self.user_type_combo.set("Estudiante" if self.original_loan_type == "student" else "Profesor")
         self.user_type_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
@@ -681,6 +681,12 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         self.user_id_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
         self.user_id_entry.insert(0, self.loan_details[6]) # estudiante_id o profesor_id
         self.user_id_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        self.user_id_entry.bind("<KeyRelease>", self._validate_user_id)
+        row_idx += 1
+
+        # Label para mostrar el estado de validación del usuario
+        self.user_validation_label = ctk.CTkLabel(scrollable_frame, text="", font=get_font("small"))
+        self.user_validation_label.grid(row=row_idx, column=1, padx=5, pady=(0, 10), sticky="w")
         row_idx += 1
         
         # Fechas de Entrega y Devolución
@@ -797,6 +803,31 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         y = parent_y + (parent_height - dialog_height) // 2
         self.geometry(f"+{x}+{y}")
 
+    def _on_user_type_change_edit(self, event):
+        # This method is called when the user type combo box is changed.
+        # We need to re-validate the user ID based on the new user type.
+        self._validate_user_id()
+
+    def _validate_user_id(self, event=None):
+        user_id = self.user_id_entry.get().strip()
+        user_type = self.user_type_combo.get()
+        is_valid = False
+        error_msg = ""
+
+        if user_type == "Estudiante":
+            is_valid = self.student_model.get_student_by_code_or_id(user_id)
+            if not is_valid:
+                error_msg = f"✗ El código '{user_id}' no corresponde a un estudiante válido."
+        else: # Profesor
+            is_valid = self.profesor_model.get_professor_by_id(user_id)
+            if not is_valid:
+                error_msg = f"✗ La cédula '{user_id}' no corresponde a un profesor válido."
+
+        if is_valid:
+            self.user_validation_label.configure(text="✓ Código/Cédula válido", text_color="green")
+        else:
+            self.user_validation_label.configure(text=error_msg, text_color="red")
+
     def save(self):
         update_data = {}
         
@@ -805,6 +836,15 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         new_user_id = self.user_id_entry.get().strip()
         new_fecha_entrega_str = self.fecha_entrega_entry.get().strip()
         new_fecha_devolucion_str = self.fecha_devolucion_entry.get().strip()
+
+        # Validar usuario antes de guardar
+        if selected_user_type_str == "Estudiante":
+            user_exists = self.student_model.get_student_by_code_or_id(new_user_id)
+        else:
+            user_exists = self.profesor_model.get_professor_by_id(new_user_id)
+        if not user_exists:
+            messagebox.showerror("Error de Validación", f"El {selected_user_type_str.lower()} con ID '{new_user_id}' no existe en la base de datos. No se puede guardar.", parent=self)
+            return
 
         # 2. Validar cambio de tipo y/o ID de usuario
         new_loan_type = "student" if selected_user_type_str == "Estudiante" else "professor"

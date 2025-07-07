@@ -558,7 +558,7 @@ class RoomEditDialog(ctk.CTkToplevel):
 
         row_idx = 0
         ctk.CTkLabel(scrollable_frame, text="Tipo de Usuario:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
-        self.user_type_combo = ctk.CTkComboBox(scrollable_frame, values=["Estudiante", "Profesor"], font=get_font("normal"), state="disabled")
+        self.user_type_combo = ctk.CTkComboBox(scrollable_frame, values=["Estudiante", "Profesor"], font=get_font("normal"), state="readonly", command=self._on_user_type_change_edit)
         self.user_type_combo.set("Estudiante" if self.original_loan_type == "student" else "Profesor")
         self.user_type_combo.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
         row_idx += 1
@@ -567,6 +567,12 @@ class RoomEditDialog(ctk.CTkToplevel):
         self.user_id_entry = ctk.CTkEntry(scrollable_frame, font=get_font("normal"))
         self.user_id_entry.insert(0, self.loan_details[self.idx['usuario_id']])
         self.user_id_entry.grid(row=row_idx, column=1, padx=5, pady=10, sticky="ew")
+        self.user_id_entry.bind("<KeyRelease>", self._validate_user_id)
+        row_idx += 1
+
+        # Label para mostrar el estado de validación del usuario
+        self.user_validation_label = ctk.CTkLabel(scrollable_frame, text="", font=get_font("small"))
+        self.user_validation_label.grid(row=row_idx, column=1, padx=5, pady=(0, 10), sticky="w")
         row_idx += 1
 
         ctk.CTkLabel(scrollable_frame, text="Fecha Entrada:", font=get_font("normal")).grid(row=row_idx, column=0, padx=5, pady=10, sticky="w")
@@ -651,6 +657,45 @@ class RoomEditDialog(ctk.CTkToplevel):
         y = parent_y + (parent_height - dialog_height) // 2
         self.geometry(f"+{x}+{y}")
 
+    def _on_user_type_change_edit(self, event=None):
+        """Maneja el cambio de tipo de usuario en el diálogo de edición."""
+        user_type = self.user_type_combo.get()
+        # Limpiar validación anterior
+        self.user_validation_label.configure(text="")
+        # Habilitar/deshabilitar campos de equipo según el tipo
+        if user_type == "Profesor":
+            self.equipo_code_entry.configure(state="disabled")
+            self.equipo_number_entry.configure(state="disabled")
+        else:  # Estudiante
+            self.equipo_code_entry.configure(state="normal")
+            self.equipo_number_entry.configure(state="normal")
+        # Validar el código/cédula actual
+        self._validate_user_id()
+
+    def _validate_user_id(self, event=None):
+        """Valida que el código/cédula ingresado existe en la base de datos correspondiente."""
+        user_id = self.user_id_entry.get().strip()
+        user_type = self.user_type_combo.get()
+        if not user_id:
+            self.user_validation_label.configure(text="", text_color=("gray", "gray"))
+            return
+        # Verificar si el usuario existe en la base de datos correspondiente
+        user_exists = False
+        if user_type == "Estudiante":
+            user_exists = self.student_model.get_student_by_code_or_id(user_id) is not None
+        else:  # Profesor
+            user_exists = self.profesor_model.get_professor_by_id(user_id) is not None
+        if user_exists:
+            self.user_validation_label.configure(
+                text="✓ Usuario válido", 
+                text_color=("green", "lightgreen")
+            )
+        else:
+            self.user_validation_label.configure(
+                text="✗ Usuario no encontrado", 
+                text_color=("red", "lightcoral")
+            )
+
     def save(self):
         update_data = {}
         new_user_id = self.user_id_entry.get().strip()
@@ -660,6 +705,16 @@ class RoomEditDialog(ctk.CTkToplevel):
         lab_nombre = self.lab_combo.get()
         monitor_nombre = self.monitor_combo.get()
         observaciones = self.obs_textbox.get("1.0", "end-1c").strip()
+
+        # Validar usuario antes de guardar
+        user_type = self.user_type_combo.get()
+        if user_type == "Estudiante":
+            user_exists = self.student_model.get_student_by_code_or_id(new_user_id) is not None
+        else:
+            user_exists = self.profesor_model.get_professor_by_id(new_user_id) is not None
+        if not user_exists:
+            messagebox.showerror("Error de Validación", f"El {user_type.lower()} con ID '{new_user_id}' no existe en la base de datos. No se puede guardar.", parent=self)
+            return
 
         if not new_user_id or not new_fecha_entrada:
             messagebox.showerror("Error", "El ID de usuario y la fecha de entrada son obligatorios.", parent=self)

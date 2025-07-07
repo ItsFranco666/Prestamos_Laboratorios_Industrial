@@ -373,16 +373,16 @@ class DatabaseManager:
                 INSERT INTO prestamos_salas_profesores 
                 (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones) 
                 VALUES 
-                ('2024-03-15 08:00:00', 5, 1, 1, 80012345, '10:00:00', 80012345, 'Clase de laboratorio'),
-                ('2024-03-15 10:30:00', 6, 2, 2, 80023456, '12:30:00', 80023456, 'Práctica de estudiantes');
+                ('2024-03-15 08:00:00', 5, 1, 1, 80012345, NULL, NULL, 'Clase de laboratorio'),
+                ('2024-03-15 10:30:00', 6, 2, 2, 80023456, NULL, NULL, 'Práctica de estudiantes');
             ''')
             
             cursor.executescript('''
                 INSERT INTO prestamos_salas_profesores 
-                (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, observaciones) 
+                (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones) 
                 VALUES 
-                ('2024-03-15 13:00:00', 7, 3, 3, 80034567, 'Investigación'),
-                ('2024-03-15 15:30:00', 8, 4, 4, 80045678, 'Trabajo de grado');
+                ('2024-03-15 13:00:00', 7, 3, 3, 80034567, NULL, NULL, 'Investigación'),
+                ('2024-03-15 15:30:00', 8, 4, 4, 80045678, NULL, NULL, 'Trabajo de grado');
             ''')
 
         # Préstamos de salas a estudiantes
@@ -390,12 +390,12 @@ class DatabaseManager:
         if cursor.fetchone()[0] == 0:
             cursor.executescript('''
                 INSERT INTO prestamos_salas_estudiantes 
-                (fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, numero_equipo, firma_estudiante, novedad) 
+                (fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, equipo_codigo, firma_estudiante, novedad) 
                 VALUES 
-                ('2024-03-15 08:00:00', 5, 1, 1, 2023001, '10:00:00', 1, 2023001, NULL),
-                ('2024-03-15 10:30:00', 6, 2, 2, 2023002, '12:30:00', 2, 2023002, 'Equipo 2 con problemas de conexión'),
-                ('2024-03-15 13:00:00', 7, 3, 3, 2023003, '15:00:00', 1, 2023003, NULL),
-                ('2024-03-15 15:30:00', 8, 4, 4, 2023004, '17:30:00', 2, 2023004, NULL);
+                ('2024-03-15 08:00:00', 5, 1, 1, 2023001, NULL, NULL, NULL, NULL),
+                ('2024-03-15 10:30:00', 6, 2, 2, 2023002, NULL, NULL, NULL, NULL),
+                ('2024-03-15 13:00:00', 7, 3, 3, 2023003, NULL, NULL, NULL, NULL),
+                ('2024-03-15 15:30:00', 8, 4, 4, 2023004, NULL, NULL, NULL, NULL);
             ''')
 
         # Préstamos de equipos a profesores
