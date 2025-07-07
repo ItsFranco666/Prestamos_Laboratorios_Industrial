@@ -4,6 +4,8 @@ from database.models import EquipmentLoanModel, InventoryModel, PersonalLaborato
 from utils.font_config import get_font
 from datetime import datetime
 import os, sys
+import cv2
+from pyzbar.pyzbar import decode
 from PIL import Image, ImageTk
 
 class EquipmentLoansView(ctk.CTkFrame):
@@ -81,10 +83,20 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.sala_combo.set(sala_names[0])
         self.sala_combo.grid(row=2, column=1, padx=5, pady=10, sticky="ew")
 
-        # ID Usuario (Código o Cédula)
+         # ID Usuario (Código o Cédula)
         ctk.CTkLabel(form_grid, text="Código/Cédula:*", font=get_font("normal")).grid(row=3, column=0, padx=5, pady=10, sticky="w")
-        self.user_id_entry = ctk.CTkEntry(form_grid, placeholder_text="Código de estudiante o cédula de profesor", font=get_font("normal"))
-        self.user_id_entry.grid(row=3, column=1, padx=5, pady=10, sticky="ew")
+        
+        # Create a frame to hold the entry and the button
+        user_id_frame = ctk.CTkFrame(form_grid, fg_color="transparent")
+        user_id_frame.grid(row=3, column=1, padx=5, pady=10, sticky="ew")
+        user_id_frame.columnconfigure(0, weight=1) # Make entry expand
+        
+        self.user_id_entry = ctk.CTkEntry(user_id_frame, placeholder_text="Código de estudiante o cédula de profesor", font=get_font("normal"))
+        self.user_id_entry.grid(row=0, column=0, sticky="ew")
+        
+        # QR Scan Button
+        self.scan_btn = ctk.CTkButton(user_id_frame, text="Scan QR", command=self._scan_qr_code, width=80)
+        self.scan_btn.grid(row=0, column=1, padx=(10, 0), sticky="e")
 
         # Número de estudiantes (solo para estudiantes)
         ctk.CTkLabel(form_grid, text="Número de Estudiantes:", font=get_font("normal")).grid(row=4, column=0, padx=5, pady=10, sticky="w")
@@ -120,6 +132,51 @@ class EquipmentLoansView(ctk.CTkFrame):
         # Botón de guardar
         save_btn = ctk.CTkButton(form_grid, text="Guardar Préstamo", command=self._save_loan, font=get_font("normal", "bold"))
         save_btn.grid(row=9, column=0, columnspan=2, pady=20, padx=5, sticky="ew")
+    
+    def _scan_qr_code(self):
+        """Activates the camera to scan a QR code and fills the user ID entry."""
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            messagebox.showerror("Error de Cámara", "No se pudo acceder a la cámara del dispositivo.", parent=self)
+            return
+
+        scanned_code = None
+        try:
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                # Detect and decode QR codes
+                qr_codes = decode(frame)
+                if qr_codes:
+                    # Take the first QR code found
+                    scanned_code = qr_codes[0].data.decode('utf-8')
+                    # Draw a rectangle around the QR code
+                    (x, y, w, h) = qr_codes[0].rect
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    # Show success message on screen
+                    cv2.putText(frame, "Codigo leido!", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                
+                cv2.imshow("QR Code Scanner - Presione 'q' para cerrar", frame)
+
+                if scanned_code:
+                    cv2.waitKey(1000) # Show "Codigo leido!" message for 1 second
+                    break
+
+                # Close window if 'q' is pressed
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
+
+        # Update the entry field if a code was successfully scanned
+        if scanned_code:
+            self.user_id_entry.delete(0, 'end')
+            self.user_id_entry.insert(0, scanned_code)
+        else:
+            messagebox.showinfo("Información", "No se leyó ningún código QR válido.", parent=self)
 
     def _save_loan(self):
         user_type = self.user_type_combo.get()

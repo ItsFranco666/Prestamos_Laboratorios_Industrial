@@ -21,9 +21,9 @@ class DatabaseManager:
             if sys.platform == "win32":
                 app_data_dir = os.path.join(os.environ.get('APPDATA'), "GestionDeLaboratorios")
             elif sys.platform == "darwin":
-                app_data_dir = os.path.join(os.path.expanduser("~/Library/Application Support"), "YourAppName")
+                app_data_dir = os.path.join(os.path.expanduser("~/Library/Application Support"), "GestionDeLaboratorios")
             else: # Linux and other Unix-like systems
-                app_data_dir = os.path.join(os.path.expanduser("~/.local/share"), "YourAppName")
+                app_data_dir = os.path.join(os.path.expanduser("~/.local/share"), "GestionDeLaboratorios")
             
             os.makedirs(app_data_dir, exist_ok=True)
             db_file_path = os.path.join(app_data_dir, self.db_name)
