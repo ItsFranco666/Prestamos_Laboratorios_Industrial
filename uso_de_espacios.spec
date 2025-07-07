@@ -17,21 +17,27 @@ a = Analysis(
     pathex=[basedir], # Add the base directory to the path for modules
     binaries=[],
     datas=[
-        ('assets/app_icon.ico', 'assets'), # Icon for the executable and inside the bundle
-        ('assets/app_icon.png', 'assets'), # Fallback icon
-        ('uso_de_espacios.db', '.'), # Initial empty/pre-populated database file
-        ('views', 'views'), # Include the entire views package
-        ('utils', 'utils'), # Include the entire utils package
-        # Add any other directories or files your app needs
-        # e.g., ('path/to/your/images', 'images')
+        ('assets/app_icon.ico', 'assets'),
+        ('assets/app_icon.png', 'assets'),
+        ('assets/excel_icon.png', 'assets'),
+        # Incluye todos los archivos de la carpeta assets
+        ('assets/', 'assets'),
+        ('uso_de_espacios.db', '.'),
+        ('views', 'views'),
+        ('utils', 'utils'),
+        ('libiconv.dll', '.'),
     ],
     hiddenimports=[
-        'customtkinter', 
-        'sqlite3', 
-        'PIL', 
-        'PIL.Image', 
+        'customtkinter',
+        'sqlite3',
+        'PIL',
+        'PIL.Image',
         'PIL.ImageTk',
-        'darkdetect' # If you are using darkdetect for theme detection
+        'darkdetect',
+        'pyzbar',
+        'pyzbar.pyzbar',
+        'cv2',
+        'tkinter',
     ],
     hookspath=[],
     hooksconfig={},
@@ -62,6 +68,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/app_icon.ico', # Path to your .ico file for the executable itself
+    icon='assets/app_icon.ico', # Path to your .ico file for el ejecutable y ventana
     version='version_info.txt' # Path to your version info file
 )
