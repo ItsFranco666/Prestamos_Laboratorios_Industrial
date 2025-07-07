@@ -1,10 +1,10 @@
 import customtkinter as ctk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import os
 import sys
 from PIL import Image, ImageTk
 from utils.font_config import get_font
-
+from utils.exporter import export_database_to_excel
 from .personal_view import PersonalView
 from .students_view import StudentsView
 from .profesores_view import ProfessorsView
@@ -101,7 +101,7 @@ class MainWindow(ctk.CTk):
     def create_sidebar(self):
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color=("#EBEBEB", "#1c1c1c"))
         self.sidebar_frame.grid(row=0, column=0, rowspan=1, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(12, weight=1)
+        self.sidebar_frame.grid_rowconfigure(13, weight=1) # Adjust row configure to push items to the bottom
 
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Sistema de\nGestión de Laboratorios", font=get_font("subtitle", "bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 20))
@@ -121,49 +121,69 @@ class MainWindow(ctk.CTk):
             ("🏢    Sedes", self.show_sedes_view)
         ]
         
-        # Create the navigation buttons on the sidebar
         for i, (text, command) in enumerate(nav_items, 1):
             btn = ctk.CTkButton(
-                self.sidebar_frame,
-                text=text,
+                self.sidebar_frame, text=text,
                 command=lambda cmd=command, view_name=text: self.switch_view(cmd, view_name),
-                height=45,
-                font=get_font("normal"),
-                corner_radius=8,
-                fg_color="transparent",
-                hover_color=("#ffd3a8", "#9c6d41"),
-                text_color=("#2b2b2b", "#ffffff"),
-                anchor="w"
+                height=45, font=get_font("normal"), corner_radius=8, fg_color="transparent",
+                hover_color=("#ffd3a8", "#9c6d41"), text_color=("#2b2b2b", "#ffffff"), anchor="w"
             )
             btn.grid(row=i, column=0, padx=30, pady=3, sticky="ew")
             self.nav_buttons[text] = btn
         
-        # --- MODIFIED SECTION START ---
+        # --- EXPORT BUTTON ---
+        # Cargar el icono de Excel
+        excel_icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "excel_icon.png")
+        excel_icon_image = None
+        if os.path.exists(excel_icon_path):
+            excel_icon_image = ctk.CTkImage(
+                light_image=Image.open(excel_icon_path),
+                dark_image=Image.open(excel_icon_path),
+                size=(24, 24)
+            )
+
+        self.export_button = ctk.CTkButton(
+            self.sidebar_frame,
+            text="Exportar a Excel",
+            image=excel_icon_image,
+            compound="left",  # Icono a la izquierda del texto
+            command=self.export_data,
+            height=40,
+            font=get_font("small", "bold"),
+            corner_radius=8,
+            fg_color=("#1D6F42", "#107C41"),
+            hover_color=("#155B33", "#158E4C")
+        )
+        self.export_button.grid(row=len(nav_items) + 1, column=0, padx=20, pady=(20, 10), sticky="sew")
+
+        # --- APPEARANCE MODE WIDGETS ---
         self.appearance_mode_label = ctk.CTkLabel(self.sidebar_frame, text="Apariencia:", anchor="w", font=get_font("small"))
-        self.appearance_mode_label.grid(row=len(nav_items) + 1, column=0, padx=20, pady=(10, 0), sticky="sw")
+        self.appearance_mode_label.grid(row=len(nav_items) + 2, column=0, padx=20, pady=(10, 0), sticky="sw")
         
-        # The OptionMenu now only shows "Claro" and "Oscuro"
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(
             self.sidebar_frame, 
             values=["Claro", "Oscuro"],
             command=self.change_appearance_mode_event, 
             font=get_font("small"),
-            # Added colors to match the style of the other active buttons
             fg_color=("#ffa154", "#c95414"),
             button_color=("#ff8c33", "#b34a0e"),
             button_hover_color=("#ff7b1a", "#9e400c")
         )
-        self.appearance_mode_optionemenu.grid(row=len(nav_items) + 2, column=0, padx=20, pady=(0, 20), sticky="sw")
+        self.appearance_mode_optionemenu.grid(row=len(nav_items) + 3, column=0, padx=20, pady=(0, 20), sticky="sw")
 
-        # Set the initial value of the dropdown based on the current theme
-        current_mode = ctk.get_appearance_mode()
-        if current_mode == "System":
-            current_mode = self.get_system_theme()  # Returns "Dark" or "Light"
+        current_mode = "Claro" if ctk.get_appearance_mode() == "Light" else "Oscuro"
+        self.appearance_mode_optionemenu.set(current_mode)
+    
+    def export_data(self):
+        """
+        Calls the exporter utility to save all database data to an Excel file.
+        """
+        try:
+            # The exporter function handles the file dialog and messaging
+            export_database_to_excel()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo iniciar el proceso de exportación: {e}")
 
-        # Map the theme to the Spanish labels for the dropdown
-        display_mode = "Claro" if current_mode == "Light" else "Oscuro"
-        self.appearance_mode_optionemenu.set(display_mode)
-        # --- MODIFIED SECTION END ---
 
     def create_main_content_area(self):
         self.main_frame = ctk.CTkFrame(self, corner_radius=10, fg_color=("#ffffff", "#242424"))

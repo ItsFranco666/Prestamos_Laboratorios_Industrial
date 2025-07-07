@@ -494,6 +494,24 @@ class PersonalLaboratorioModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
     
+    def get_all_personal_for_export(self):
+        ''' Retrieves all staff with text-based roles for exporting. '''
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        query = '''
+            SELECT id, nombre, 
+                CASE cargo 
+                    WHEN 0 THEN 'Laboratorista' 
+                    ELSE 'Monitor' 
+                END as cargo
+            FROM personal_laboratorio 
+            ORDER BY nombre ASC
+        '''
+        cursor.execute(query)
+        personal = cursor.fetchall()
+        conn.close()
+        return personal
+    
     def get_cargos(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
@@ -1117,6 +1135,27 @@ class EquiposModel:
     """
     def __init__(self):
         self.db_manager = DatabaseManager()
+    
+    def get_all_equipos_for_export(self):
+        """Retrieves all room equipment with text-based status for exporting."""
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        query = '''
+            SELECT e.codigo, s.nombre as sala_nombre, e.numero_equipo,
+                e.descripcion, 
+                CASE e.estado 
+                    WHEN 0 THEN 'En Mantenimiento' 
+                    ELSE 'Operativo' 
+                END as estado, 
+                e.observaciones
+            FROM equipos e
+            LEFT JOIN salas s ON e.sala_id = s.id
+            ORDER BY s.nombre, e.numero_equipo ASC
+        '''
+        cursor.execute(query)
+        equipos = cursor.fetchall()
+        conn.close()
+        return equipos
 
     def get_all_equipos(self, search_term="", sala_filter_id=None, status_filter=None):
         """
