@@ -15,7 +15,7 @@ basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
 a = Analysis(
     ['main.py'],
     pathex=[basedir], # Add the base directory to the path for modules
-    binaries=[],
+    binaries=[('libiconv.dll', 'libiconv.dll')],
     datas=[
         ('assets/app_icon.ico', 'assets'),
         ('assets/app_icon.png', 'assets'),
@@ -25,7 +25,6 @@ a = Analysis(
         ('uso_de_espacios.db', '.'),
         ('views', 'views'),
         ('utils', 'utils'),
-        ('libiconv.dll', '.'),
     ],
     hiddenimports=[
         'customtkinter',

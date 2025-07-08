@@ -37,9 +37,20 @@ class MainWindow(ctk.CTk):
         
         self.current_view = None
         self.create_sidebar()
+        self.centrar_ventana()
         self.create_main_content_area()
         
         self.show_dashboard() # Default view
+    
+    def centrar_ventana(self):
+        self.update_idletasks()
+
+        ancho = 1400
+        alto = 850
+
+        x = (self.winfo_screenwidth() // 2) - (ancho // 2)
+        y = (self.winfo_screenheight() // 2) - (alto // 2)
+        self.geometry(f"{ancho}x{alto}+{x}+{y}")
     
     def get_system_theme(self):
         """Detects the current system theme."""

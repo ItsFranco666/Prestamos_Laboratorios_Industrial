@@ -5,7 +5,6 @@ from utils.font_config import get_font
 from datetime import datetime
 import os, sys
 import cv2
-from pyzbar.pyzbar import decode
 from PIL import Image, ImageTk
 
 class RoomLoansView(ctk.CTkFrame):
@@ -138,50 +137,58 @@ class RoomLoansView(ctk.CTkFrame):
         self._on_user_type_change()
     
     def _scan_qr_code(self):
-        """Activates the camera to scan a QR code and fills the user ID entry."""
+        """Activa la cámara para escanear un QR usando el detector de OpenCV."""
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             messagebox.showerror("Error de Cámara", "No se pudo acceder a la cámara del dispositivo.", parent=self)
             return
 
+        # Inicializa el detector de QR de OpenCV
+        detector = cv2.QRCodeDetector()
         scanned_code = None
+
         try:
             while True:
                 ret, frame = cap.read()
                 if not ret:
                     break
 
-                # Detect and decode QR codes
-                qr_codes = decode(frame)
-                if qr_codes:
-                    # Take the first QR code found
-                    scanned_code = qr_codes[0].data.decode('utf-8')
-                    # Draw a rectangle around the QR code
-                    (x, y, w, h) = qr_codes[0].rect
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    # Show success message on screen
-                    cv2.putText(frame, "Codigo leido!", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                
+                # Detecta y decodifica el código QR
+                data, bbox, _ = detector.detectAndDecode(frame)
+
+                # Si se detecta un código QR y tiene datos
+                if data:
+                    scanned_code = data
+                    # Dibuja un polígono alrededor del QR detectado
+                    if bbox is not None:
+                        # cv2.polylines necesita que los puntos sean enteros
+                        points = bbox[0].astype(int)
+                        cv2.polylines(frame, [points], True, (0, 255, 0), 2)
+                        
+                        # Muestra un mensaje de éxito sobre el frame
+                        cv2.putText(frame, "Codigo leido!", (points[0][0], points[0][1] - 10), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
                 cv2.imshow("QR Code Scanner - Presione 'q' para cerrar", frame)
 
                 if scanned_code:
-                    cv2.waitKey(1000) # Show "Codigo leido!" message for 1 second
+                    cv2.waitKey(1000)  # Muestra el mensaje por 1 segundo
                     break
 
-                # Close window if 'q' is pressed
+                # Cierra la ventana si se presiona 'q'
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
         finally:
             cap.release()
             cv2.destroyAllWindows()
 
-        # Update the entry field if a code was successfully scanned
+        # Actualiza el campo de texto si se escaneó un código
         if scanned_code:
             self.user_id_entry.delete(0, 'end')
             self.user_id_entry.insert(0, scanned_code)
         else:
             messagebox.showinfo("Información", "No se leyó ningún código QR válido.", parent=self)
-
+            
     def _on_user_type_change(self, event=None):
         """Handles the conditional logic for fields based on user type, including the room list."""
         user_type = self.user_type_combo.get()
