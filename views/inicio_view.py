@@ -368,26 +368,38 @@ class MainWindow(ctk.CTk):
     def set_app_icon(self):
         try:
             # When running as a PyInstaller executable, sys._MEIPASS is the path to the temp folder
-            # where bundled files are extracted.
-            # Otherwise, it's the directory of the script.
+            # where bundled files are extracted. Otherwise, it's the directory of the script.
             base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
             
+            # Define the paths to icon files (both .ico and .png for compatibility)
             icon_path_ico = os.path.join(base_path, "..", "assets", "app_icon.ico")
             icon_path_png = os.path.join(base_path, "..", "assets", "app_icon.png")
+
+            # Comprobación explícita de existencia de los iconos
+            if not os.path.exists(icon_path_ico):
+                print(f"[ADVERTENCIA] No se encontró el icono .ico en: {icon_path_ico}")
+            else:
+                print(f"Se encontró el icono .ico en: {icon_path_ico}")
+            if not os.path.exists(icon_path_png):
+                print(f"[ADVERTENCIA] No se encontró el icono .png en: {icon_path_png}")
+            else:
+                print(f"Se encontró el icono .png en: {icon_path_png}")
             
+            # Determine the final icon path based on the existence of files
             final_icon_path = None
             if sys.platform == "win32" and os.path.exists(icon_path_ico):
                 final_icon_path = icon_path_ico
             elif os.path.exists(icon_path_png):
-                 final_icon_path = icon_path_png
+                final_icon_path = icon_path_png
             
+            # Set the application icon for both window and taskbar
             if final_icon_path:
                 if sys.platform == "win32" and final_icon_path.endswith(".ico"):
-                    self.iconbitmap(default=final_icon_path) # Use default parameter for .ico
+                    self.iconbitmap(default=final_icon_path)  # Use default for .ico
                 else:
                     icon_image = Image.open(final_icon_path)
                     icon_photo = ImageTk.PhotoImage(icon_image)
-                    self.iconphoto(True, icon_photo) # type: ignore
+                    self.iconphoto(True, icon_photo)  # Set for the window and taskbar
             else:
                 print(f"Icon file not found. Searched: {icon_path_ico}, {icon_path_png}")
         except Exception as e:
