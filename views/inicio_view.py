@@ -21,7 +21,7 @@ class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         
-        self.title("Sistema de Gestión Universitaria")
+        self.title("Sistema de Gestión de Laboratorios de Producción")
         self.geometry("1400x850")
         
         # Set app icon
@@ -36,6 +36,8 @@ class MainWindow(ctk.CTk):
         self.setup_ttk_styles()
         
         self.current_view = None
+        self.logo_image_label = None  # Referencia para actualizar la imagen
+        self.logo_image = None        # Mantener referencia a la imagen para evitar garbage collection
         self.create_sidebar()
         self.centrar_ventana()
         self.create_main_content_area()
@@ -109,13 +111,49 @@ class MainWindow(ctk.CTk):
         style.map("Modern.Treeview.Heading", 
                   background=[('active', heading_active_bg)])
 
+    def get_logo_image_path(self, theme_mode=None):
+        """Devuelve la ruta de la imagen de logo según el tema."""
+        import os
+        if theme_mode is None:
+            theme_mode = ctk.get_appearance_mode()
+        base_path = os.path.join(os.path.dirname(__file__), "..", "assets")
+        if theme_mode == "Dark":
+            return os.path.join(base_path, "Dark_UD.png")
+        else:
+            return os.path.join(base_path, "Ligth_UD.png")
+
+    def load_logo_image(self, theme_mode=None):
+        """Carga la imagen de logo adecuada según el tema, respetando la transparencia."""
+        from PIL import Image
+        import os
+        logo_path = self.get_logo_image_path(theme_mode)
+        if os.path.exists(logo_path):
+            img = Image.open(logo_path).convert("RGBA")  # Asegura canal alfa
+            img = img.resize((128, 128), Image.LANCZOS)
+            return ctk.CTkImage(light_image=img, dark_image=img, size=(128, 128))
+        return None
+
     def create_sidebar(self):
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color=("#EBEBEB", "#1c1c1c"))
         self.sidebar_frame.grid(row=0, column=0, rowspan=1, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(13, weight=1) # Adjust row configure to push items to the bottom
 
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Sistema de\nGestión de Laboratorios", font=get_font("subtitle", "bold"))
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 20))
+        # --- SOLO LOGO CENTRADO ---
+        logo_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        logo_frame.grid(row=0, column=0, padx=0, pady=(10, 10), sticky="nsew")
+        logo_frame.grid_columnconfigure(0, weight=1)
+        logo_frame.grid_rowconfigure(0, weight=1)
+
+        self.logo_image = self.load_logo_image()
+        self.logo_image_label = ctk.CTkLabel(
+            logo_frame,
+            image=self.logo_image,
+            text="",
+            width=100,
+            height=100,
+            fg_color="transparent"
+        )
+        self.logo_image_label.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
         
         self.nav_buttons = {}
         nav_items = [
@@ -139,7 +177,7 @@ class MainWindow(ctk.CTk):
                 height=45, font=get_font("normal"), corner_radius=8, fg_color="transparent",
                 hover_color=("#ffd3a8", "#9c6d41"), text_color=("#2b2b2b", "#ffffff"), anchor="w"
             )
-            btn.grid(row=i, column=0, padx=30, pady=3, sticky="ew")
+            btn.grid(row=i, column=0, padx=30, pady=0, sticky="ew")
             self.nav_buttons[text] = btn
         
         # --- EXPORT BUTTON ---
@@ -165,7 +203,7 @@ class MainWindow(ctk.CTk):
             fg_color=("#1D6F42", "#107C41"),
             hover_color=("#155B33", "#158E4C")
         )
-        self.export_button.grid(row=len(nav_items) + 1, column=0, padx=20, pady=(20, 10), sticky="sew")
+        self.export_button.grid(row=len(nav_items) + 1, column=0, padx=20, pady=(12, 8), sticky="sew")
 
         # --- APPEARANCE MODE WIDGETS ---
         self.appearance_mode_label = ctk.CTkLabel(self.sidebar_frame, text="Apariencia:", anchor="w", font=get_font("small"))
@@ -287,6 +325,12 @@ class MainWindow(ctk.CTk):
         equipment_loans_view.pack(fill="both", expand=True)
         return equipment_loans_view
 
+    def update_logo_image(self, theme_mode=None):
+        """Actualiza la imagen del logo según el tema."""
+        self.logo_image = self.load_logo_image(theme_mode)
+        if self.logo_image_label:
+            self.logo_image_label.configure(image=self.logo_image)
+
     def change_appearance_mode_event(self, new_appearance_mode_spanish: str):
         """Handles theme changes and ensures the current view is updated."""
         # Map the Spanish labels to CustomTkinter's internal theme names
@@ -317,6 +361,8 @@ class MainWindow(ctk.CTk):
             
             # Force UI update
             self.current_view.update_idletasks()
+        # Actualizar imagen del logo
+        self.update_logo_image(new_appearance_mode)
     # --- MODIFIED SECTION END ---
 
     def set_app_icon(self):

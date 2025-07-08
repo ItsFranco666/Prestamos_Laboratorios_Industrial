@@ -6,11 +6,11 @@ def get_font(size_category="normal", weight="normal"):
     """
     size = 20  # Default normal size
     if size_category == "title":
-        size = 30
+        size = 26
     elif size_category == "subtitle":
-        size = 25
+        size = 22
     elif size_category == "large":
-        size = 24
+        size = 21
     elif size_category == "small":
         size = 18
 
