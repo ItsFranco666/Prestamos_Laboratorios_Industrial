@@ -198,12 +198,12 @@ class RoomLoansView(ctk.CTkFrame):
             self.equipo_number_entry.delete(0, 'end')
             self.equipo_code_entry.configure(state="disabled")
             self.equipo_number_entry.configure(state="disabled")
-            self.equipo_label.configure(text="Identificador de Equipo:") # No asterisk
+            self.equipo_label.configure(text="Identificador de Equipo:")
             self.salas_data = self.room_model.get_available_rooms_for_dropdown()
         else: # Estudiante
             self.equipo_code_entry.configure(state="normal")
             self.equipo_number_entry.configure(state="normal")
-            self.equipo_label.configure(text="Identificador de Equipo:*") # With asterisk
+            self.equipo_label.configure(text="Identificador de Equipo:")
             self.salas_data = self.room_model.get_all_rooms_with_id_for_dropdown()
 
         sala_names = ["Seleccione una sala..."] + [s[1] for s in self.salas_data]
@@ -235,9 +235,6 @@ class RoomLoansView(ctk.CTkFrame):
             equipo_code_str = self.equipo_code_entry.get().strip()
             equipo_number_str = self.equipo_number_entry.get().strip()
 
-            if not equipo_code_str and not equipo_number_str:
-                messagebox.showerror("Error de Validación", "Para préstamos a estudiantes, debe proporcionar el Código del Equipo o el Número de Equipo en la sala.", parent=self)
-                return
             if equipo_code_str and equipo_number_str:
                 messagebox.showwarning("Ambigüedad", "Por favor, proporcione solo el Código del Equipo o el Número de Equipo, no ambos.", parent=self)
                 return
@@ -249,22 +246,22 @@ class RoomLoansView(ctk.CTkFrame):
                 except ValueError:
                     messagebox.showerror("Error de Validación", "El Número de Equipo debe ser un valor numérico.", parent=self)
                     return
-            
-            equipo_encontrado = self.equipos_model.get_equipo_by_identifier(
-                sala_id=sala_id,
-                codigo=equipo_code_str if equipo_code_str else None,
-                numero_equipo=equipo_number_val
-            )
-
-            if not equipo_encontrado:
-                messagebox.showerror("No Encontrado", "No se encontró el equipo con los datos proporcionados para la sala seleccionada.", parent=self)
-                return
-            
-            if equipo_code_str and equipo_encontrado[1] != sala_id:
-                 messagebox.showerror("Error de Ubicación", f"El equipo '{equipo_code_str}' no pertenece a la sala seleccionada.", parent=self)
-                 return
-            
-            equipo_codigo_val = equipo_encontrado[0]
+            equipo_encontrado = None
+            if equipo_code_str or equipo_number_str:
+                equipo_encontrado = self.equipos_model.get_equipo_by_identifier(
+                    sala_id=sala_id,
+                    codigo=equipo_code_str if equipo_code_str else None,
+                    numero_equipo=equipo_number_val
+                )
+                if not equipo_encontrado:
+                    messagebox.showerror("No Encontrado", "No se encontró el equipo con los datos proporcionados para la sala seleccionada.", parent=self)
+                    return
+                if equipo_code_str and equipo_encontrado[1] != sala_id:
+                    messagebox.showerror("Error de Ubicación", f"El equipo '{equipo_code_str}' no pertenece a la sala seleccionada.", parent=self)
+                    return
+                equipo_codigo_val = equipo_encontrado[0]
+            else:
+                equipo_codigo_val = None
 
         user_exists = self.student_model.get_student_by_code_or_id(user_id) if user_type == "Estudiante" else self.profesor_model.get_professor_by_id(user_id)
         
