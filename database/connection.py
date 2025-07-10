@@ -82,7 +82,7 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS estudiantes (
                 codigo INTEGER PRIMARY KEY,
                 nombre TEXT,
-                cedula INTEGER UNIQUE,
+                cedula INTEGER,
                 proyecto_curricular_id INTEGER REFERENCES proyectos_curriculares(id)
             );
             
@@ -323,11 +323,11 @@ class DatabaseManager:
                     ('2018061200000', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'VIDEO BEAM CABLE PODER CABLE HDMI', '1 VIDEO PROYECTOR EPSON X41 POWERLITE 3.600 LUMENS EN BLANCO Y COLOR-RESOLUCIÓN XGA V11H843022 - 1 CABLE DE PODER - 1 CABLE DE HDMI', 'DISPONIBLE', 1),
                     ('2018061200002', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'VIDEO BEAM CABLE PODER CABLE HDMI', '1 VIDEO PROYECTOR EPSON X41 POWERLITE 3.600 LUMENS EN BLANCO Y COLOR-RESOLUCIÓN XGA V11H843022 - 1 CABLE DE PODER - 1 CABLE DE HDMI', 'DISPONIBLE', 1),
                     ('2018061200003', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'VIDEO BEAM CABLE PODER CABLE HDMI', '1 VIDEO PROYECTOR EPSON X41 POWERLITE 3.600 LUMENS EN BLANCO Y COLOR-RESOLUCIÓN XGA V11H843022 - 1 CABLE DE PODER - 1 CABLE DE HDMI', 'DISPONIBLE', 1),
-                    ('188690', 'PEAKTECH - 08102386', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS	1 SONOMETRO', 'DISPONIBLE', 1),
-                    ('188691', 'PEAKTECH - 08102436', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS	1 SONOMETRO', 'DISPONIBLE', 1),
-                    ('188692', 'PEAKTECH - 08102439', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS	1 SONOMETRO', 'DISPONIBLE', 1),
-                    ('188693', 'PEAKTECH - 08102437', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS	1 SONOMETRO', 'DISPONIBLE', 1),
-                    ('188694', 'PEAKTECH - 08102390', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS	1 SONOMETRO', 'DISPONIBLE', 1),
+                    ('188690', 'PEAKTECH - 08102386', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS', '1 SONOMETRO', 'DISPONIBLE', 1),
+                    ('188691', 'PEAKTECH - 08102436', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS', '1 SONOMETRO', 'DISPONIBLE', 1),
+                    ('188692', 'PEAKTECH - 08102439', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS', '1 SONOMETRO', 'DISPONIBLE', 1),
+                    ('188693', 'PEAKTECH - 08102437', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS', '1 SONOMETRO', 'DISPONIBLE', 1),
+                    ('188694', 'PEAKTECH - 08102390', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SONOMETROS', '1 SONOMETRO', 'DISPONIBLE', 1),
                     ('192186', 'GW INSTEK - GLX- 301/110449', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'ILUMINOMETRO', '1 ILUMINOMETRO', 'DISPONIBLE', 1),
                     ('192187', 'GW INSTEK - GLX- 301/110423', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'ILUMINOMETRO', '1 ILUMINOMETRO', 'DISPONIBLE', 1),
                     ('192188', 'GW INSTEK - GLX- 301/110440', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'ILUMINOMETRO', '1 ILUMINOMETRO', 'DISPONIBLE', 1),
@@ -429,8 +429,8 @@ class DatabaseManager:
                     ('2122MH00FSA9', 'Logitech', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'AUDIFONOS DIADEMA 1', 'Diadema de audifonos y usb', 'DISPONIBLE', 1),
                     ('MMM23', 'Logitech', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'CAMARA COMPUTADOR', 'Camara de video para computador', 'DISPONIBLE', 1),
                     ('2019040300090', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SET EXPANSION PARA MINDSTORMS EV3', 'SET LEGO MINDSTORM EV3 INCLUYE: ADAPTADOR DE CORRIENTE', 'DISPONIBLE', 1),
-                    ('2019040300009', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SET EXPANSION PARA MINDSTORMS EV3', 'SET LEGO MINDSTORM EV3 INCLUYE: ADAPTADOR DE CORRIENTE', 'DISPONIBLE', 1),
-                    ('2019040300002', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SET EXPANSION PARA MINDSTORMS EV3', 'SET LEGO MINDSTORM EV3 INCLUYE: ADAPTADOR DE CORRIENTE', 'DISPONIBLE', 1),
+                    ('2019040300091', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SET EXPANSION PARA MINDSTORMS EV3', 'SET LEGO MINDSTORM EV3 INCLUYE: ADAPTADOR DE CORRIENTE', 'DISPONIBLE', 1),
+                    ('2019040300092', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'SET EXPANSION PARA MINDSTORMS EV3', 'SET LEGO MINDSTORM EV3 INCLUYE: ADAPTADOR DE CORRIENTE', 'DISPONIBLE', 1),
                     ('188598', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'MEDIDOR MULTIFUNCIONAL MARCA PEAKTECH', 'MEDIDOR MULTIFUNCIONAL MARCA PEAKTECH', 'DISPONIBLE', 1),
                     ('158588', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'MEDIDOR MULTIFUNCIONAL MARCA PEAKTECH', 'MEDIDOR MULTIFUNCIONAL MARCA PEAKTECH', 'DISPONIBLE', 1),
                     ('188587', '-', 51953330, 'CLAUDIA MABEL MORENO PENAGOS', 'MEDIDOR MULTIFUNCIONAL MARCA PEAKTECH', 'MEDIDOR MULTIFUNCIONAL MARCA PEAKTECH', 'DISPONIBLE', 1),
@@ -472,7 +472,7 @@ class DatabaseManager:
         cursor.execute("SELECT COUNT(*) FROM equipos")
         if cursor.fetchone()[0] == 0:
             cursor.executescript('''
-                INSERT INTO equipos (codigo, sala_id, numero_equipo, descripcion, estado, observaciones) VALUES 
+                INSERT INTO equipos (codigo, sala_id, numero_equipo, descripcion, estado) VALUES 
                     (41601, 4, 1, 'Equipo 01 / SSA', 1),	
                     (41602, 4, 2, 'Equipo 02 / SSA', 1),	
                     (41603, 4, 3, 'Equipo 03 / SSA', 1),	
@@ -569,7 +569,7 @@ class DatabaseManager:
                     (20232377027, 'Juan Felipe Lopez Sanchez', 2, 1000724247),
                     (20232577137, 'Jaiver Jair Pinto Guevara', 12, 1001176532),
                     (20241377010, 'Daniel Steven Amalla', 2, 1007695357),
-                    (20221577084, 'Melary Nicole Rozo Pinzon', 12, 0),
+                    (20221577084, 'Melary Nicole Rozo Pinzon', 12, 2),
                     (20212574050, 'Juan Pablo Tuta Castro', 11, 1034656059),
                     (20202574085, 'Nixon Jussef Aguilera Wagner', 11, 1000835745),
                     (20221574031, 'Jackson Stiven Martinez Rodriguez', 11, 1117491758),
@@ -595,7 +595,6 @@ class DatabaseManager:
                     (20222577006, 'Johan Sebastian Prada Hernandez', 12, 1070385166),
                     (20241577044, 'Andrés Mauricio Quiñones Quiñones', 12, 1030553214),
                     (20241377040, 'Estiven Marin', 2, 1000326005),
-                    (20241377011, 'Harryson Stick Niño', 2, 1000707362),
                     (20241377009, 'Natalia Cante Garzon', 2, 1000729417),
                     (20251379110, 'Stefanie Restrepo', 8, 1012363236),
                     (20251379131, 'ESTEFANY CARRILO', 8, 1067604718),
@@ -624,14 +623,14 @@ class DatabaseManager:
                     (20241377001, 'Nicolas Alberto Puentes', 12, 1024569367),
                     (20232377044, 'Iris Daniela Coredor Nieto', 12, 1031158164),
                     (20232377003, 'Derian Rodrigo Tello Leon', 12, 1115917334),
-                    (20201577102, 'Laura Stefania Cajamarca Beltran', 12, 1011201888),
+                    (20201577102, 'Laura Stefania Cajamarca Beltran', 12, 1011201889),
                     (20202577022, 'Katherine Andrea Castillo Garcia', 2, 1014196918),
                     (20241377060, 'Bladimir Perdomo', 12, 1000781190),
                     (20242377007, 'laura Camila Vela', 12, 1073719828),
                     (20221577104, 'Ana Maria Olarte Anzola', 12, 1022934090),
                     (20221967031, 'Miguel Bedoza', 12, 1000621999),
                     (20201577082, 'Lina Maria Oliveros Orjuela', 12, 1193577440),
-                    (1011201888, 'Laura Stefania Cajamarca Beltran', 12, 1011201888),
+                    (1011201888, 'Laura Stefania Cajamarca Beltran', 12, 1011201890),
                     (20242377006, 'Paula Viviana Mogollon Mosquera', 2, 1026586892),
                     (20241377014, 'Mischell Kaory Forero pedraza', 12, 1001296234),
                     (20242673065, 'Emerson Damian Hernandez Beltran', 10, 1027525062),
@@ -658,8 +657,8 @@ class DatabaseManager:
                     (20222673049, 'Leidy Alexandra Mena Ortiz', 10, 1073671271),
                     (20222673006, 'Samuel Santiago Ruiz Yepez', 10, 1085902307),
                     (20221673081, 'Angello Jefrey Gutierrez Rodriguez', 10, 1027524139),
-                    (20221973011, 'Daniel Campos Rincon', 10, ,
-                    (20161077720), 'iris Daniela Corredor Nieto', 12, 1031158164),
+                    (20221973011, 'Daniel Campos Rincon', 10, 3),
+                    (20161077720, 'iris Daniela Corredor Nieto', 12, 1031158165),
                     (20241377037, 'Sebastian Morales', 12, 3144898627),
                     (20231577065, 'DANNA CATALINA FORERO CEBALLOS', 12, 1022928061),
                     (20232577033, 'LAURA YINETH CHACON', 12, 1000621553),
@@ -670,18 +669,18 @@ class DatabaseManager:
                     (20212577101, 'Karen Daniela Guasca Florez', 12, 1014656611),
                     (20242377044, 'Julian Sebastian Gomez Paez', 2, 1000988515),
                     (20231577014, 'Juliana Luna Linares', 12, 1028880361),
-                    (20241377039, 'Laura Stefania Cajamarca Beltran', 2, 1011201888),
-                    (20221377047, 'Yenny Campo', 12, ,
-                    (20192577012), 'Wenddy Balentina Patiño Camacho', 12, 1000122395),
+                    (20241377039, 'Laura Stefania Cajamarca Beltran', 2, 1011201891),
+                    (20221377047, 'Yenny Campo', 12, 4),
+                    (20192577012, 'Wenddy Balentina Patiño Camacho', 12, 1000122396),
                     (20192577045, 'Hernan Sebastian Candamil Parra', 12, 1000856854),
                     (20192577119, 'Nicolth Dayanne Romero Plazas', 12, 1015462109),
                     (20231377037, 'Isabella Blanco Buitrago', 12, 1193441531),
-                    (20181577057, 'DILAN ESTEBAN ARANDA GUALTEROS', 12, 1007648188),
-                    (20241577048, 'Nicol Daniela Castro', 11, ,
-                    (20241574152), 'Johan David Tapias Lopez', 11, 1022948396),
+                    (20181577057, 'DILAN ESTEBAN ARANDA GUALTEROS', 12, 1007648189),
+                    (20241577048, 'Nicol Daniela Castro', 11, 5),
+                    (20241574152, 'Johan David Tapias Lopez', 11, 1022948396),
                     (20241574112, 'Juan Sebastian Rodriguez Nuñez', 11, 1033098400),
-                    (20212577409, 'Angel Santiago Espinoza Salcedo', 11, ,
-                    (20241574115), 'Cristian David Gamboa Muñoz', 11, 1034396969),
+                    (20212577409, 'Angel Santiago Espinoza Salcedo', 11, 6),
+                    (20241574115, 'Cristian David Gamboa Muñoz', 11, 1034396969),
                     (20241574160, 'Andres Felipe Pinilla Murcia', 11, 1033704554),
                     (20242577020, 'Allyson Daniela Navarrete Ramirez', 12, 1027150210),
                     (20241577056, 'Rafael Santiago Rodriguez Puentes', 11, 1011092568),
@@ -713,9 +712,9 @@ class DatabaseManager:
                     (20232377069, 'Diego Alexander Muñoz Castillo', 2, 1016010800),
                     (20232377032, 'Miguel Alejandro Niño', 2, 1010005276),
                     (20241377028, 'Karen Lizeth Ortiz Rojas', 2, 1000139934),
-                    (20221577044, 'Dayanna Calderon Mahecha', 12, 0) ,
-                    (20201577035, 'Juan Pablo Camargo', 12, 0),
-                    (20251377032, 'Maria Fernanda Quiebraolla', 2, 0),
+                    (20221577044, 'Dayanna Calderon Mahecha', 12, 7),
+                    (20201577035, 'Juan Pablo Camargo', 12, 8),
+                    (20251377032, 'Maria Fernanda Quiebraolla', 2, 9),
                     (20221577023, 'Hanna Sofia Gonzalez Sanchez', 12, 1013104474),
                     (20231577063, 'Anguie Mishelle Duarte Duarte', 12, 1032678344),
                     (20231577056, 'Karen Sirley Cañon Paez', 12, 1053327387),
@@ -763,10 +762,10 @@ class DatabaseManager:
                     (20241577003, 'Juan Sebastian Obando Moreno', 12, 1011094838),
                     (20221577006, 'Santiago Andrés Gil Duarte', 12, 1028660144),
                     (20231377008, 'Karoll Angelica Yarce Ruiz', 2, 1030701960),
-                    (20242377014, 'Diomer Arbey Sanabria Pachón', 2, 0),
-                    (20242377010, 'Maritza Andrea Cruz Rodríguez', 2, 0),
+                    (20242377014, 'Diomer Arbey Sanabria Pachón', 2, 10),
+                    (20242377010, 'Maritza Andrea Cruz Rodríguez', 2, 11),
                     (20191577037, 'Maria Fernanda Parraga Hernandez', 12, 1007652277),
-                    (202411377011, 'Harrison Estid Niño Muñoz', 2, 1000707362),
+                    (20241377011, 'Harrison Estid Niño Muñoz', 2, 1000707362),
                     (20241377003, 'Aitken Julian Vasquez Silvera', 2, 1001203474),
                     (20192573001, 'Estefani Tapiero Guerra', 12, 1000224970),
                     (20222578140, 'Leidy Daniela Parra Vargas', 12, 1013258548),
@@ -988,10 +987,14 @@ class DatabaseManager:
                     (20192573055, 'Juan Camilo Castro', 10, 1001201521),
                     (20211673140, 'Nelson Sebastian Bajaca Acero', 10, 1000864455),
                     (20192577125, 'Santiago Romero Quevedo', 12, 1001193290),
-                    (20242377047, 'Andres Felipe Ortiz Leon', 2, 0)
-                    (20222577060), 'Geraldine Espitia Florido', 12, 1002523383),
+                    (20242377047, 'Andres Felipe Ortiz Leon', 2, 12),
+                    (20222577060, 'Geraldine Espitia Florido', 12, 1002523383),
                     (20222577080, 'Paula Alejandra Arroyo Mur', 12, 1030529181),
                     (20231574076, 'Javier Leonardo Tique Buenaventura', 11, 1028480566),
+                    (20221978031, 'Andres Felipe Franco Tellez', 13, 1011081215),
+                    (20221978013, 'Andres Felipe Rincon Sanchez', 13, 13),
+                    (20221978026, 'Gabriela Moreno Rojas', 13, 14),
+                    (20221978007, 'Brayan Santiago Valero Arias', 13, 15),
                     (20212577069, 'Michael Hernandez', 12, 1012433450);
             ''')
 
@@ -1022,7 +1025,7 @@ class DatabaseManager:
                     (79055619, 'Jose David Cely Callejas', 18),
                     (1000973174, 'Valeria Pamplona Gutierrez', 2),
                     (51882539, 'Angela Pardo Heredia', 12),
-                    (10178396, 'Albeiro Rubiano'),
+                    (10178396, 'Albeiro Rubiano', 12),
                     (1000988323, 'Miguel Angel Bernal Gonzales', 9),
                     (80913205, 'Hector Ivan Tangarife Escobar', 11),
                     (52522772, 'Mariam  Elizabeth Vera Morales', 12),
@@ -1039,7 +1042,6 @@ class DatabaseManager:
                     (79662344, 'Edgar Orlando Ladino Moreno', 1),
                     (80210579, 'Edward Hernando Bejarano', 10),
                     (79766207, 'Edwin Alberto Bulla Pereira', 12),
-                    (1067880335, 'Emiliano Rodríguez Arango', 7),
                     (12977377, 'Ernesto Agreda Bastidas', 11),
                     (52715915, 'Evelyn Ivonne Diaz Montaño', 12),
                     (79526683, 'Fabio Hernando Castellanos Moreno', 10),
@@ -1081,65 +1083,6 @@ class DatabaseManager:
                     (79502261, 'Victor Hugo Riveros Gomez', 12),
                     (79756323, 'Victor Ruiz', 7),
                     (79697945, 'William Alexander Murcia Rodriguez', 12),
-                    (80472494, 'Wilson Alexander Pinzón Rueda', 2);
-            ''')
-
-        # Préstamos de salas a profesores
-        cursor.execute("SELECT COUNT(*) FROM prestamos_salas_profesores")
-        if cursor.fetchone()[0] == 0:
-            cursor.executescript('''
-                INSERT INTO prestamos_salas_profesores 
-                (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones) 
-                VALUES 
-                ('2024-03-15 08:00:00', 5, 1, 1, 80012345, NULL, NULL, 'Clase de laboratorio'),
-                ('2024-03-15 10:30:00', 6, 2, 2, 80023456, NULL, NULL, 'Práctica de estudiantes');
-            ''')
-            
-            cursor.executescript('''
-                INSERT INTO prestamos_salas_profesores 
-                (fecha_entrada, laboratorista, monitor, sala_id, profesor_id, hora_salida, firma_profesor, observaciones) 
-                VALUES 
-                ('2024-03-15 13:00:00', 7, 3, 3, 80034567, NULL, NULL, 'Investigación'),
-                ('2024-03-15 15:30:00', 8, 4, 4, 80045678, NULL, NULL, 'Trabajo de grado');
-            ''')
-
-        # Préstamos de salas a estudiantes
-        cursor.execute("SELECT COUNT(*) FROM prestamos_salas_estudiantes")
-        if cursor.fetchone()[0] == 0:
-            cursor.executescript('''
-                INSERT INTO prestamos_salas_estudiantes 
-                (fecha_entrada, laboratorista, monitor, sala_id, estudiante_id, hora_salida, equipo_codigo, firma_estudiante, novedad) 
-                VALUES 
-                ('2024-03-15 08:00:00', 5, 1, 1, 2023001, NULL, NULL, NULL, NULL),
-                ('2024-03-15 10:30:00', 6, 2, 2, 2023002, NULL, NULL, NULL, NULL),
-                ('2024-03-15 13:00:00', 7, 3, 3, 2023003, NULL, NULL, NULL, NULL),
-                ('2024-03-15 15:30:00', 8, 4, 4, 2023004, NULL, NULL, NULL, NULL);
-            ''')
-
-        # Préstamos de equipos a profesores
-        cursor.execute("SELECT COUNT(*) FROM prestamos_equipos_profesores")
-        if cursor.fetchone()[0] == 0:
-            cursor.executescript('''
-                INSERT INTO prestamos_equipos_profesores 
-                (fecha_entrega, fecha_devolucion, laboratorista_entrega, monitor_entrega, 
-                equipo_codigo, profesor_id, sala_id, titulo_practica, estado, 
-                laboratorista_devolucion, monitor_devolucion, documento_devolvente, observaciones) 
-                VALUES 
-                ('2024-03-15 10:30:00', NULL, 6, 2, 'EQ002', 80023456, 2, 'Investigación de Tesis', 1, NULL, NULL, NULL, 'Préstamo activo'),
-                ('2024-03-15 13:00:00', '2024-03-15 15:00:00', 7, 3, 'EQ003', 80034567, 3, 'Laboratorio de Control', 0, 7, 3, 80034567, 'Equipo con fallas menores')
-            ''')
-
-        # Préstamos de equipos a estudiantes
-        cursor.execute("SELECT COUNT(*) FROM prestamos_equipos_estudiantes")
-        if cursor.fetchone()[0] == 0:
-            cursor.executescript('''
-                INSERT INTO prestamos_equipos_estudiantes 
-                (fecha_entrega, fecha_devolucion, equipo_codigo, laboratorista_entrega, monitor_entrega,
-                estudiante_id, numero_estudiantes, sala_id, titulo_practica, estado,
-                laboratorista_devolucion, monitor_devolucion, documento_devolvente, observaciones) 
-                VALUES 
-                ('2024-03-15 08:00:00', '2024-03-15 10:00:00', 'EQ005', 5, 1, 2023001, 3, 1, 'Práctica de Laboratorio', 0, 5, 1, 2023001, 'Equipo devuelto correctamente'),
-                ('2024-03-15 10:30:00', NULL, 'EQ006', 6, 2, 2023002, 2, 2, 'Trabajo de Grado', 1, NULL, NULL, NULL, 'Préstamo activo'),
-                ('2024-03-15 13:00:00', '2024-03-15 15:00:00', 'EQ007', 7, 3, 2023003, 4, 3, 'Práctica de Electrónica', 0, 7, 3, 2023003, 'Equipo con daños menores'),
-                ('2024-03-15 15:30:00', NULL, 'EQ008', 8, 4, 2023004, 2, 4, 'Proyecto Final', 1, NULL, NULL, NULL, 'Préstamo activo');
+                    (80472494, 'Wilson Alexander Pinzón Rueda', 2),
+                    (1067880335, 'Emiliano Rodríguez Arango', 7);
             ''')
