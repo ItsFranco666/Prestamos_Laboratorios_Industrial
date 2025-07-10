@@ -67,6 +67,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/app_icon.ico', # Path to your .ico file for el ejecutable y ventana
-    version='version_info.txt' # Path to your version info file
+    icon='assets/app_icon.ico',
+    version='version_info.txt'
 )
