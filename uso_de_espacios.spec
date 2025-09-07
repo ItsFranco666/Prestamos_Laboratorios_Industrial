@@ -15,7 +15,7 @@ basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
 a = Analysis(
     ['main.py'],
     pathex=[basedir], # Add the base directory to the path for modules
-    binaries=[('libiconv.dll', 'libiconv.dll')],
+    binaries=[],
     datas=[
         ('assets/app_icon.ico', 'assets'),
         ('assets/app_icon.png', 'assets'),

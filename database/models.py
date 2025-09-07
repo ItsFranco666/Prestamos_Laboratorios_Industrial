@@ -5,7 +5,8 @@ class StudentModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
 
-    def get_all_students(self, search_term="", project_filter_name=""):
+    # Lists all the students
+    def get_all_students(self, search_term='', project_filter_name=''):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
@@ -18,15 +19,16 @@ class StudentModel:
         params = [f'%{search_term}%', f'%{search_term}%', f'%{search_term}%']
         
         if project_filter_name:
-            query += " AND pc.nombre = ?"
+            query += ' AND pc.nombre = ?'
             params.append(project_filter_name)
-        
-        query += " ORDER BY e.nombre ASC"
+
+        query += ' ORDER BY e.nombre ASC'
         cursor.execute(query, params)
         students = cursor.fetchall()
         conn.close()
         return students
 
+    # A student can be located by code or id
     def get_student_by_code_or_id(self, identifier):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
@@ -50,16 +52,16 @@ class StudentModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding student: {e}")
+            print(f'Error adding student: {e}')
             return False
         finally:
             conn.close()
 
+    # Insert a student with code but no data, when a code is no found in a loan
     def add_blank_student(self, codigo):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Adds a student with only the code. Other fields are null.
             cursor.execute('''
                 INSERT INTO estudiantes (codigo, nombre, cedula, proyecto_curricular_id)
                 VALUES (?, NULL, NULL, NULL)
@@ -67,7 +69,7 @@ class StudentModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding blank student: {e}")
+            print(f'Error adding blank student: {e}')
             return False
         finally:
             conn.close()
@@ -86,7 +88,7 @@ class StudentModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error updating student: {e}")
+            print(f'Error updating student: {e}')
             return False
         finally:
             conn.close()
@@ -98,7 +100,7 @@ class StudentModel:
             cursor.execute('DELETE FROM estudiantes WHERE codigo = ?', (codigo,))
             conn.commit()
         except sqlite3.Error as e:
-            print(f"Error deleting student: {e}") # Handle potential foreign key constraints if student has loans
+            print(f'Error deleting student: {e}') # Handle potential foreign key constraints if student has loans
         finally:
             conn.close()
     
@@ -110,11 +112,11 @@ class StudentModel:
         conn.close()
         return projects
 
-class ProfesorModel: # Renamed from Profesor for consistency
+class ProfesorModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
     
-    def get_all_profesores(self, search_term="", project_filter_name=""):
+    def get_all_profesores(self, search_term='', project_filter_name=''):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
@@ -124,20 +126,20 @@ class ProfesorModel: # Renamed from Profesor for consistency
             LEFT JOIN proyectos_curriculares pc ON p.proyecto_curricular_id = pc.id
             WHERE (CAST(p.cedula AS TEXT) LIKE ? OR p.nombre LIKE ?)
         '''
-        # Cedula is primary key, usually not searched with LIKE unless it's a partial string search
+        # Cedula is primary key, usually not searched with LIKE unless its a partial string search
         params = [f'%{search_term}%', f'%{search_term}%']
         
         if project_filter_name:
-            query += " AND pc.nombre = ?"
+            query += ' AND pc.nombre = ?'
             params.append(project_filter_name)
         
-        query += " ORDER BY p.nombre ASC"
+        query += ' ORDER BY p.nombre ASC'
         cursor.execute(query, params)
         profesores = cursor.fetchall()
         conn.close()
         return profesores
 
-    def get_professor_by_id(self, cedula): # Changed from get_professor_by_code_or_id
+    def get_professor_by_id(self, cedula):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
@@ -160,16 +162,16 @@ class ProfesorModel: # Renamed from Profesor for consistency
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding professor: {e}")
+            print(f'Error adding professor: {e}')
             return False
         finally:
             conn.close()
     
+    # Adds a professor with only the ID number. Other fields are null.
     def add_blank_profesor(self, cedula):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Adds a professor with only the ID number. Other fields are null.
             cursor.execute('''
                 INSERT INTO profesores (cedula, nombre, proyecto_curricular_id)
                 VALUES (?, NULL, NULL)
@@ -177,7 +179,7 @@ class ProfesorModel: # Renamed from Profesor for consistency
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding blank professor: {e}")
+            print(f'Error adding blank professor: {e}')
             return False
         finally:
             conn.close()
@@ -196,7 +198,7 @@ class ProfesorModel: # Renamed from Profesor for consistency
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error updating professor: {e}")
+            print(f'Error updating professor: {e}')
             return False
         finally:
             conn.close()
@@ -208,11 +210,11 @@ class ProfesorModel: # Renamed from Profesor for consistency
             cursor.execute('DELETE FROM profesores WHERE cedula = ?', (cedula,))
             conn.commit()
         except sqlite3.Error as e:
-            print(f"Error deleting professor: {e}") # Handle potential foreign key constraints
+            print(f'Error deleting professor: {e}')
         finally:
             conn.close()
     
-    def get_curriculum_projects(self): # Same as StudentModel, could be refactored
+    def get_curriculum_projects(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT id, nombre FROM proyectos_curriculares ORDER BY nombre ASC')
@@ -224,6 +226,7 @@ class RoomModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
     
+    # Lists if a room is occupied or available depending to loans
     def get_all_rooms_with_status(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
@@ -249,6 +252,8 @@ class RoomModel:
         conn.close()
         return rooms
     
+    ''' When a student asks for a room, it ill be ocuppied but available for another
+        loan, but for a professor the occupied ones will not be displayed '''
     def get_available_rooms_for_dropdown(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
@@ -268,8 +273,8 @@ class RoomModel:
         conn.close()
         return rooms
     
+    # Fetches all rooms with their ID and name, suitable for foreign key relations
     def get_all_rooms_with_id_for_dropdown(self):
-        """Fetches all rooms with their ID and name, suitable for foreign key relations."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT id, nombre FROM salas ORDER BY nombre ASC')
@@ -293,7 +298,7 @@ class RoomModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding room: {e}")
+            print(f'Error adding room: {e}')
             return False
         finally:
             conn.close()
@@ -308,7 +313,7 @@ class RoomModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error updating room: {e}")
+            print(f'Error updating room: {e}')
             return False
         finally:
             conn.close()
@@ -320,7 +325,7 @@ class RoomModel:
             cursor.execute('DELETE FROM salas WHERE codigo_interno = ?', (codigo,))
             conn.commit()
         except sqlite3.Error as e:
-            print(f"Error deleting room: {e}") # Handle FK constraints
+            print(f'Error deleting room: {e}')
         finally:
             conn.close()
 
@@ -328,7 +333,8 @@ class InventoryModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
     
-    def get_all_equipment(self, search_term="", status_filter="", brand_serial_filter=""):
+    # Filters by status and serial
+    def get_all_equipment(self, search_term='', status_filter='', brand_serial_filter=''):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
@@ -344,13 +350,13 @@ class InventoryModel:
         params = [f'%{search_term}%', f'%{search_term}%']
         
         if status_filter:
-            query += " AND i.estado = ?"
+            query += ' AND i.estado = ?'
             params.append(status_filter)
         if brand_serial_filter:
-            query += " AND i.marca_serie LIKE ?"
+            query += ' AND i.marca_serie LIKE ?'
             params.append(f'%{brand_serial_filter}%')
 
-        query += " ORDER BY i.codigo ASC"
+        query += ' ORDER BY i.codigo ASC'
         cursor.execute(query, params)
         equipment = cursor.fetchall()
         conn.close()
@@ -383,17 +389,16 @@ class InventoryModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding equipment: {e}")
+            print(f'Error adding equipment: {e}')
             return False
         finally:
             conn.close()
     
+    # Adds an equipment with only the code and a 'DISPONIBLE' status
     def add_blank_equipment(self, codigo):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Adds a piece of equipment with only the code and a 'DISPONIBLE' status.
-            # Other fields are null or have default values.
             cursor.execute('''
                 INSERT INTO inventario 
                 (codigo, marca_serie, documento_funcionario, nombre_funcionario, 
@@ -403,8 +408,7 @@ class InventoryModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            # This could happen if the code already exists, though the view's logic should prevent it.
-            print(f"Error adding blank equipment: {e}")
+            print(f'Error adding blank equipment: {e}')
             return False
         finally:
             conn.close()
@@ -426,7 +430,7 @@ class InventoryModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error updating equipment: {e}")
+            print(f'Error updating equipment: {e}')
             return False
         finally:
             conn.close()
@@ -438,28 +442,29 @@ class InventoryModel:
             cursor.execute('DELETE FROM inventario WHERE codigo = ?', (codigo,))
             conn.commit()
         except sqlite3.Error as e:
-            print(f"Error deleting equipment: {e}") # Handle FK constraints
+            print(f'Error deleting equipment: {e}')
         finally:
             conn.close()
-            
+
+    # Fetches equipment thats available
     def get_available_equipment_for_dropdown(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        # Fetches equipment that is 'DISPONIBLE'
-        cursor.execute("SELECT codigo, descripcion || ' (' || estado || ')' FROM inventario WHERE estado = 'DISPONIBLE' ORDER BY codigo ASC")
+        cursor.execute('SELECT codigo, descripcion || " (" || estado || ")" FROM inventario WHERE estado = "DISPONIBLE" ORDER BY codigo ASC')
         equipment = cursor.fetchall()
         conn.close()
         return equipment
 
-    def get_all_equipment_for_dropdown(self): # Includes status
+    # Fetches equipment regardless of the state
+    def get_all_equipment_for_dropdown(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT codigo, descripcion || ' (' || estado || ')' FROM inventario ORDER BY codigo ASC")
+        cursor.execute('SELECT codigo, descripcion || " (" || estado || ")" FROM inventario ORDER BY codigo ASC')
         equipment = cursor.fetchall()
         conn.close()
         return equipment
 
-    def get_sedes(self):
+    def get_campus(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT id, nombre FROM sedes ORDER BY nombre ASC')
@@ -467,8 +472,8 @@ class InventoryModel:
         conn.close()
         return sedes
 
+    # Checks if a equipmment is available for loan
     def check_equipment_availability(self, equipo_codigo):
-        """Verifica si un equipo está disponible para préstamo"""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT estado FROM inventario WHERE codigo = ?', (equipo_codigo,))
@@ -477,7 +482,6 @@ class InventoryModel:
         return result and result[0] == 'DISPONIBLE'
 
     def update_equipment_status(self, equipo_codigo, nuevo_estado):
-        """Actualiza el estado de un equipo"""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -485,7 +489,7 @@ class InventoryModel:
             conn.commit()
             return True
         except sqlite3.Error as e:
-            print(f"Error updating equipment status: {e}")
+            print(f'Error updating equipment status: {e}')
             return False
         finally:
             conn.close()
@@ -494,8 +498,8 @@ class PersonalLaboratorioModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
     
+    # Retrieves all staff with text-based roles for exporting
     def get_all_personal_for_export(self):
-        ''' Retrieves all staff with text-based roles for exporting. '''
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         query = '''
@@ -515,12 +519,12 @@ class PersonalLaboratorioModel:
     def get_cargos(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, nombre, CASE cargo WHEN 0 THEN 'Laboratorista' ELSE 'Monitor' END as cargo_nombre FROM personal_laboratorio ORDER BY nombre ASC")
+        cursor.execute('SELECT id, nombre, CASE cargo WHEN 0 THEN "Laboratorista" ELSE "Monitor" END as cargo_nombre FROM personal_laboratorio ORDER BY nombre ASC')
         personal = cursor.fetchall()
         conn.close()
         return personal
 
-    def get_all_personal(self, search_term="", cargo_filter_name=""):
+    def get_all_personal(self, search_term='', cargo_filter_name=''):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
@@ -531,54 +535,51 @@ class PersonalLaboratorioModel:
         '''
         params = [f'%{search_term}%', f'%{search_term}%']
         
-        if cargo_filter_name and cargo_filter_name != "Todos":
-            query += " AND CASE cargo WHEN 0 THEN 'Laboratorista' ELSE 'Monitor' END = ?"
+        if cargo_filter_name and cargo_filter_name != 'Todos':
+            query += ' AND CASE cargo WHEN 0 THEN "Laboratorista" ELSE "Monitor" END = ?'
             params.append(cargo_filter_name)
         
-        query += " ORDER BY nombre ASC"
+        query += ' ORDER BY nombre ASC'
         cursor.execute(query, params)
         personal = cursor.fetchall()
         conn.close()
         return personal
 
     def add_personal(self, nombre, cargo):
-        """Agrega un nuevo personal a la base de datos"""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO personal_laboratorio (nombre, cargo) VALUES (?, ?)", (nombre, cargo))
+            cursor.execute('INSERT INTO personal_laboratorio (nombre, cargo) VALUES (?, ?)', (nombre, cargo))
             conn.commit()
             return True
         except Exception as e:
-            print(f"Error al agregar personal: {e}")
+            print(f'Error adding personal: {e}')
             return False
         finally:
             conn.close()
 
     def update_personal(self, id, nombre, cargo):
-        """Actualiza los datos de un personal existente"""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("UPDATE personal_laboratorio SET nombre = ?, cargo = ? WHERE id = ?", (nombre, cargo, id))
+            cursor.execute('UPDATE personal_laboratorio SET nombre = ?, cargo = ? WHERE id = ?', (nombre, cargo, id))
             conn.commit()
             return True
         except Exception as e:
-            print(f"Error al actualizar personal: {e}")
+            print(f'Error updating personal: {e}')
             return False
         finally:
             conn.close()
 
     def delete_personal(self, id):
-        """Elimina un personal de la base de datos"""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("DELETE FROM personal_laboratorio WHERE id = ?", (id,))
+            cursor.execute('DELETE FROM personal_laboratorio WHERE id = ?', (id,))
             conn.commit()
             return True
         except Exception as e:
-            print(f"Error al eliminar personal: {e}")
+            print(f'Error deleting personal: {e}')
             return False
         finally:
             conn.close()
@@ -586,7 +587,7 @@ class PersonalLaboratorioModel:
     def get_laboratoristas(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, nombre FROM personal_laboratorio WHERE cargo = 0 ORDER BY nombre ASC") # 0 for Laboratorista
+        cursor.execute('SELECT id, nombre FROM personal_laboratorio WHERE cargo = 0 ORDER BY nombre ASC') # 0 for Laboratorista
         personal = cursor.fetchall()
         conn.close()
         return personal
@@ -594,7 +595,7 @@ class PersonalLaboratorioModel:
     def get_monitores(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, nombre FROM personal_laboratorio WHERE cargo = 1 ORDER BY nombre ASC") # 1 for Monitor
+        cursor.execute('SELECT id, nombre FROM personal_laboratorio WHERE cargo = 1 ORDER BY nombre ASC') # 1 for Monitor
         personal = cursor.fetchall()
         conn.close()
         return personal
@@ -603,6 +604,7 @@ class RoomLoanModel:
     def __init__(self):
         self.db_manager = DatabaseManager()
 
+    # Generates a loan for a student
     def add_loan_student(self, fecha_entrada, laboratorista_id, monitor_id, sala_id, estudiante_id, equipo_codigo, observaciones):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
@@ -615,7 +617,7 @@ class RoomLoanModel:
             conn.commit()
             return cursor.lastrowid
         except sqlite3.Error as e:
-            print(f"Error adding student room loan: {e}")
+            print(f'Error adding student room loan: {e}')
             return None
         finally:
             conn.close()
@@ -632,16 +634,14 @@ class RoomLoanModel:
             conn.commit()
             return cursor.lastrowid
         except sqlite3.Error as e:
-            print(f"Error adding professor room loan: {e}")
+            print(f'Error adding professor room loan: {e}')
             return None
         finally:
             conn.close()
 
-    def get_room_loans(self, search_term="", user_type_filter="Todos", status_filter="Todos", date_filter=None, sala_filter_id=None):
-        """
-        Fetches all room loans with comprehensive filtering capabilities.
-        - sala_filter_id: Filters by a specific room ID.
-        """
+    ''' Fetches all room loans with comprehensive filtering capabilities.
+    - sala_filter_id: Filters by a specific room ID. '''
+    def get_room_loans(self, search_term='', user_type_filter='Todos', status_filter='Todos', date_filter=None, sala_filter_id=None):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
@@ -682,39 +682,39 @@ class RoomLoanModel:
 
         if search_term:
             search_like = f'%{search_term}%'
-            student_where.append("(e.nombre LIKE ? OR s.nombre LIKE ? OR CAST(eq.numero_equipo AS TEXT) LIKE ? OR pse.equipo_codigo LIKE ?)")
-            professor_where.append("(p.nombre LIKE ? OR s.nombre LIKE ?)")
+            student_where.append('(e.nombre LIKE ? OR s.nombre LIKE ? OR CAST(eq.numero_equipo AS TEXT) LIKE ? OR pse.equipo_codigo LIKE ?)')
+            professor_where.append('(p.nombre LIKE ? OR s.nombre LIKE ?)')
             student_params.extend([search_like, search_like, search_like, search_like])
             professor_params.extend([search_like, search_like])
 
         status_map = {'En Préstamo': 'IS NULL', 'Finalizado': 'IS NOT NULL'}
         if status_filter in status_map:
-            student_where.append(f"pse.hora_salida {status_map[status_filter]}")
-            professor_where.append(f"psp.hora_salida {status_map[status_filter]}")
+            student_where.append(f'pse.hora_salida {status_map[status_filter]}')
+            professor_where.append(f'psp.hora_salida {status_map[status_filter]}')
         
         if date_filter:
-            student_where.append("DATE(pse.fecha_entrada) = ?")
-            professor_where.append("DATE(psp.fecha_entrada) = ?")
+            student_where.append('DATE(pse.fecha_entrada) = ?')
+            professor_where.append('DATE(psp.fecha_entrada) = ?')
             student_params.append(date_filter)
             professor_params.append(date_filter)
 
         if sala_filter_id:
-            student_where.append("pse.sala_id = ?")
-            professor_where.append("psp.sala_id = ?")
+            student_where.append('pse.sala_id = ?')
+            professor_where.append('psp.sala_id = ?')
             student_params.append(sala_filter_id)
             professor_params.append(sala_filter_id)
 
         if student_where:
-            student_query += " WHERE " + " AND ".join(student_where)
+            student_query += ' WHERE ' + ' AND '.join(student_where)
         if professor_where:
-            professor_query += " WHERE " + " AND ".join(professor_where)
+            professor_query += ' WHERE ' + ' AND '.join(professor_where)
 
         queries_to_run = []
         if user_type_filter == 'Estudiante':
             queries_to_run.append((student_query, student_params))
         elif user_type_filter == 'Profesor':
             queries_to_run.append((professor_query, professor_params))
-        else: # "Todos"
+        else: # 'Todos'
             queries_to_run.append((student_query, student_params))
             queries_to_run.append((professor_query, professor_params))
 
@@ -724,12 +724,13 @@ class RoomLoanModel:
                 cursor.execute(query, params)
                 all_loans.extend(cursor.fetchall())
             except sqlite3.Error as e:
-                print(f"Database error on room loan fetch: {e}")
+                print(f'Database error on room loan fetch: {e}')
 
         conn.close()
         all_loans.sort(key=lambda x: x[4], reverse=True) # Sort by fecha_entrada DESC
         return all_loans
 
+    # Fetches a specific room loan
     def get_room_loan_details(self, loan_id, loan_type):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
@@ -754,6 +755,7 @@ class RoomLoanModel:
         conn.close()
         return details
 
+    # Method to close a loan when its returned
     def update_room_loan_exit(self, loan_id, loan_type, hora_salida, observaciones, firma=None):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
@@ -775,16 +777,15 @@ class RoomLoanModel:
             conn.commit()
             return True
         except sqlite3.Error as e:
-            print(f"Error updating room loan exit: {e}")
+            print(f'Error updating room loan exit: {e}')
             return False
         finally:
             conn.close()
 
     def update_room_loan(self, loan_id, loan_type, update_data):
-        """Generic method to update any field in a room loan record."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        table_name = "prestamos_salas_estudiantes" if loan_type == 'student' else "prestamos_salas_profesores"
+        table_name = 'prestamos_salas_estudiantes' if loan_type == 'student' else 'prestamos_salas_profesores'
         
         # Map generic 'usuario_id' to the correct DB column name
         if 'usuario_id' in update_data:
@@ -796,34 +797,33 @@ class RoomLoanModel:
         if not update_data:
             return True # No changes to save
 
-        set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
+        set_clause = ', '.join([f'{key} = ?' for key in update_data.keys()])
         params = list(update_data.values())
         params.append(loan_id)
         
-        query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
+        query = f'UPDATE {table_name} SET {set_clause} WHERE id = ?'
         
         try:
             cursor.execute(query, params)
             conn.commit()
             return True
         except sqlite3.Error as e:
-            print(f"Error updating room loan: {e}")
+            print(f'Error updating room loan: {e}')
             conn.rollback()
             return False
         finally:
             conn.close()
 
     def delete_loan(self, loan_id, loan_type):
-        """Deletes a room loan from the database."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        table_name = "prestamos_salas_estudiantes" if loan_type == 'student' else "prestamos_salas_profesores"
+        table_name = 'prestamos_salas_estudiantes' if loan_type == 'student' else 'prestamos_salas_profesores'
         try:
             cursor.execute(f'DELETE FROM {table_name} WHERE id = ?', (loan_id,))
             conn.commit()
             return True
         except sqlite3.Error as e:
-            print(f"Error deleting room loan: {e}")
+            print(f'Error deleting room loan: {e}')
             conn.rollback()
             return False
         finally:
@@ -839,11 +839,11 @@ class EquipmentLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Verificar si el equipo está disponible
+            # Checks if the equipment is available
             if not self.inventory_model.check_equipment_availability(equipo_codigo):
                 return None
 
-            # Estado: 1 for "En prestamo"
+            # State: 1 for 'En prestamo'
             cursor.execute('''
                 INSERT INTO prestamos_equipos_estudiantes
                 (fecha_entrega, equipo_codigo, laboratorista_entrega, monitor_entrega, estudiante_id,
@@ -853,12 +853,12 @@ class EquipmentLoanModel:
                   numero_estudiantes, sala_id, titulo_practica, observaciones))
             conn.commit()
 
-            # Actualizar el estado del equipo a 'EN USO'
+            # Update to 'EN USO'
             self.inventory_model.update_equipment_status(equipo_codigo, 'EN USO')
             
             return cursor.lastrowid 
         except sqlite3.Error as e:
-            print(f"Error adding student equipment loan: {e}")
+            print(f'Error adding student equipment loan: {e}')
             return None
         finally:
             conn.close()
@@ -868,11 +868,11 @@ class EquipmentLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Verificar si el equipo está disponible
+            # Checks if the equipment is available
             if not self.inventory_model.check_equipment_availability(equipo_codigo):
                 return None
 
-            # Estado: 1 for "En prestamo"
+            # State: 1 for 'En prestamo'
             cursor.execute('''
                 INSERT INTO prestamos_equipos_profesores
                 (fecha_entrega, equipo_codigo, laboratorista_entrega, monitor_entrega, profesor_id,
@@ -882,17 +882,17 @@ class EquipmentLoanModel:
                   sala_id, titulo_practica, observaciones))
             conn.commit()
 
-            # Actualizar el estado del equipo a 'EN USO'
+            # Update to 'EN USO'
             self.inventory_model.update_equipment_status(equipo_codigo, 'EN USO')
             
             return cursor.lastrowid
         except sqlite3.Error as e:
-            print(f"Error adding professor equipment loan: {e}")
+            print(f'Error adding professor equipment loan: {e}')
             return None
         finally:
             conn.close()
 
-    def get_equipment_loans(self, search_term="", user_type_filter="Todos", status_filter="Todos"):
+    def get_equipment_loans(self, search_term='', user_type_filter='Todos', status_filter='Todos'):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
@@ -942,34 +942,34 @@ class EquipmentLoanModel:
 
         if search_term:
             search_like = f'%{search_term}%'
-            student_where_clauses.append("(e.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pee.titulo_practica LIKE ?)")
-            professor_where_clauses.append("(p.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pep.titulo_practica LIKE ?)")
+            student_where_clauses.append('(e.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pee.titulo_practica LIKE ?)')
+            professor_where_clauses.append('(p.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pep.titulo_practica LIKE ?)')
             student_params.extend([search_like, search_like, search_like, search_like])
             professor_params.extend([search_like, search_like, search_like, search_like])
 
         status_map = {'En Préstamo': 1, 'Devuelto': 0}
         if status_filter in status_map:
             status_val = status_map[status_filter]
-            student_where_clauses.append("pee.estado = ?")
-            professor_where_clauses.append("pep.estado = ?")
+            student_where_clauses.append('pee.estado = ?')
+            professor_where_clauses.append('pep.estado = ?')
             student_params.append(status_val)
             professor_params.append(status_val)
         
         # Construct the final queries with WHERE clauses if they exist
         student_query = student_base_query
         if student_where_clauses:
-            student_query += " WHERE " + " AND ".join(student_where_clauses)
+            student_query += ' WHERE ' + ' AND '.join(student_where_clauses)
 
         professor_query = professor_base_query
         if professor_where_clauses:
-            professor_query += " WHERE " + " AND ".join(professor_where_clauses)
+            professor_query += ' WHERE ' + ' AND '.join(professor_where_clauses)
             
         # Decide which queries to execute based on the user type filter
         if user_type_filter == 'Estudiante':
             queries.append((student_query, student_params))
         elif user_type_filter == 'Profesor':
             queries.append((professor_query, professor_params))
-        else:  # "Todos"
+        else:  # 'Todos'
             queries.append((student_query, student_params))
             queries.append((professor_query, professor_params))
 
@@ -979,9 +979,9 @@ class EquipmentLoanModel:
                 cursor.execute(query, param_list)
                 all_loans.extend(cursor.fetchall())
             except sqlite3.Error as e:
-                print(f"Database error: {e}")
-                print(f"Query: {query}")
-                print(f"Params: {param_list}")
+                print(f'Database error: {e}')
+                print(f'Query: {query}')
+                print(f'Params: {param_list}')
                 
         conn.close()
         
@@ -1003,7 +1003,7 @@ class EquipmentLoanModel:
             ''', (loan_id,))
             details = cursor.fetchone()
         elif loan_type == 'professor':
-            # Se agrega un placeholder NULL para numero_estudiantes para mantener la consistencia de los índices
+            # For nunmber of students it is added a NULL placeholder to maintain consistency in the indexes
             cursor.execute('''
                 SELECT id, fecha_entrega, fecha_devolucion, equipo_codigo, laboratorista_entrega, monitor_entrega,
                        profesor_id, NULL as numero_estudiantes, sala_id, titulo_practica, estado,
@@ -1018,9 +1018,9 @@ class EquipmentLoanModel:
     def update_equipment_loan(self, loan_id, loan_type, update_data):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        table_name = "prestamos_equipos_estudiantes" if loan_type == 'student' else "prestamos_equipos_profesores"
+        table_name = 'prestamos_equipos_estudiantes' if loan_type == 'student' else 'prestamos_equipos_profesores'
         
-        # Mapear 'usuario_id' al nombre de columna correcto en la BD
+        # Fetch 'usuario_id' to the correct column name in the DB
         if 'usuario_id' in update_data:
             if loan_type == 'student':
                 update_data['estudiante_id'] = update_data.pop('usuario_id')
@@ -1028,58 +1028,55 @@ class EquipmentLoanModel:
                 update_data['profesor_id'] = update_data.pop('usuario_id')
 
         if not update_data:
-            return True # No hay datos para actualizar
+            return True # No data to update
 
-        set_clause = ", ".join([f"{key} = ?" for key in update_data.keys()])
+        set_clause = ', '.join([f'{key} = ?' for key in update_data.keys()])
         params = list(update_data.values())
         params.append(loan_id)
         
-        query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
+        query = f'UPDATE {table_name} SET {set_clause} WHERE id = ?'
         
         try:
             cursor.execute(query, params)
             conn.commit()
             return True
         except sqlite3.Error as e:
-            print(f"Error updating equipment loan: {e}")
+            print(f'Error updating equipment loan: {e}')
             conn.rollback()
             return False
         finally:
             conn.close()
             
-    # Método para eliminar un préstamo
     def delete_loan(self, loan_id, loan_type):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
-        table_name = "prestamos_equipos_estudiantes" if loan_type == 'student' else "prestamos_equipos_profesores"
+        table_name = 'prestamos_equipos_estudiantes' if loan_type == 'student' else 'prestamos_equipos_profesores'
         
         try:
-            # Obtener el código y estado del equipo ANTES de borrar el préstamo
+            # Obtain the code and state of the equipment BEFORE deleting the loan
             loan_info = self._get_equipment_code_for_loan(cursor, loan_id, loan_type)
             if not loan_info:
-                return False # El préstamo no existe
+                return False # If loan doesnt exist
 
             equipo_codigo, estado_prestamo = loan_info
 
-            # Eliminar el registro del préstamo
             cursor.execute(f'DELETE FROM {table_name} WHERE id = ?', (loan_id,))
             conn.commit()
 
-            # Si el préstamo estaba activo, liberar el equipo
-            if estado_prestamo == 1: # 1 es 'En Préstamo'
+            # Free the equipment if the loan was active
+            if estado_prestamo == 1: # 1 is 'En Préstamo'
                 self.inventory_model.update_equipment_status(equipo_codigo, 'DISPONIBLE')
 
             return True
         except sqlite3.Error as e:
-            print(f"Error deleting equipment loan: {e}")
-            conn.rollback() # Revertir cambios si hay error
+            print(f'Error deleting equipment loan: {e}')
+            conn.rollback() # Revert changes
             return False
         finally:
             conn.close()
 
-    # Método para obtener el código del equipo de un préstamo
     def _get_equipment_code_for_loan(self, cursor, loan_id, loan_type):
-        table_name = "prestamos_equipos_estudiantes" if loan_type == 'student' else "prestamos_equipos_profesores"
+        table_name = 'prestamos_equipos_estudiantes' if loan_type == 'student' else 'prestamos_equipos_profesores'
         cursor.execute(f'SELECT equipo_codigo, estado FROM {table_name} WHERE id = ?', (loan_id,))
         return cursor.fetchone()
     
@@ -1088,7 +1085,7 @@ class EquipmentLoanModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Primero obtenemos el código del equipo
+            # Retrieve equipment code
             if loan_type == 'student':
                 cursor.execute('SELECT equipo_codigo FROM prestamos_equipos_estudiantes WHERE id = ?', (loan_id,))
             else:
@@ -1096,7 +1093,7 @@ class EquipmentLoanModel:
             
             equipo_codigo = cursor.fetchone()[0]
 
-            # Estado: 0 for "Devuelto"
+            # State: 0 for 'Devuelto'
             if loan_type == 'student':
                 cursor.execute('''
                     UPDATE prestamos_equipos_estudiantes
@@ -1118,26 +1115,24 @@ class EquipmentLoanModel:
 
             conn.commit()
 
-            # Actualizar el estado del equipo a 'DISPONIBLE'
+            # Update to 'DISPONIBLE'
             self.inventory_model.update_equipment_status(equipo_codigo, 'DISPONIBLE')
             
             return True
         except sqlite3.Error as e:
-            print(f"Error updating equipment loan return: {e}")
+            print(f'Error updating equipment loan return: {e}')
             return False
         finally:
             conn.close()
 
 class EquiposModel:
-    """
-    Manages database operations for the 'equipos' table, which represents
-    equipment located within specific rooms (salas).
-    """
+    ''' Manages database operations for the 'equipos' table, which represents
+    equipment located within specific rooms (salas) '''
     def __init__(self):
         self.db_manager = DatabaseManager()
     
+    # Retrieves all room equipment with text-based status for exporting
     def get_all_equipos_for_export(self):
-        """Retrieves all room equipment with text-based status for exporting."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         query = '''
@@ -1157,11 +1152,8 @@ class EquiposModel:
         conn.close()
         return equipos
 
-    def get_all_equipos(self, search_term="", sala_filter_id=None, status_filter=None):
-        """
-        Retrieves all equipment, with optional filters for search term,
-        room (sala), and status.
-        """
+    # Room devices with filters & status
+    def get_all_equipos(self, search_term='', sala_filter_id=None, status_filter=None):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
@@ -1175,21 +1167,21 @@ class EquiposModel:
         params = [f'%{search_term}%', f'%{search_term}%']
         
         if sala_filter_id:
-            query += " AND e.sala_id = ?"
+            query += ' AND e.sala_id = ?'
             params.append(sala_filter_id)
         
-        if status_filter is not None and status_filter != -1: # -1 for "Todos"
-            query += " AND e.estado = ?"
+        if status_filter is not None and status_filter != -1: # -1 for 'Todos'
+            query += ' AND e.estado = ?'
             params.append(status_filter)
 
-        query += " ORDER BY s.nombre, e.numero_equipo ASC"
+        query += ' ORDER BY s.nombre, e.numero_equipo ASC'
         cursor.execute(query, params)
         equipos = cursor.fetchall()
         conn.close()
         return equipos
 
+    # Equipment by just code (for loan)
     def get_equipo_by_code(self, codigo):
-        """Retrieves a single piece of equipment by its primary key (codigo)."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
@@ -1200,25 +1192,22 @@ class EquiposModel:
         conn.close()
         return item
 
+    # Equipment by room & code or number (for table filter)
     def get_equipo_by_identifier(self, sala_id, codigo=None, numero_equipo=None):
-        """
-        Retrieves a single piece of equipment by its code, or by its number
-        within a specific room.
-        """
         if not codigo and (numero_equipo is None):
             return None
             
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         
-        query = "SELECT codigo, sala_id, numero_equipo, descripcion, estado, observaciones FROM equipos WHERE "
+        query = 'SELECT codigo, sala_id, numero_equipo, descripcion, estado, observaciones FROM equipos WHERE '
         params = []
 
         if codigo:
-            query += "codigo = ?"
+            query += 'codigo = ?'
             params.append(codigo)
         elif numero_equipo is not None and sala_id:
-            query += "numero_equipo = ? AND sala_id = ?"
+            query += 'numero_equipo = ? AND sala_id = ?'
             params.extend([numero_equipo, sala_id])
         else:
             conn.close()
@@ -1230,7 +1219,6 @@ class EquiposModel:
         return item
 
     def add_equipo(self, codigo, sala_id, numero_equipo, descripcion, estado, observaciones):
-        """Adds a new piece of equipment to the database."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -1241,13 +1229,12 @@ class EquiposModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding equipo: {e}")
+            print(f'Error adding equipo: {e}')
             return False
         finally:
             conn.close()
 
-    def update_equipo(self, original_codigo, sala_id, numero_equipo, descripcion, estado, observaciones, new_codigo=None):
-        """Updates an existing piece of equipment's information."""
+    def update_equipo(self, original_codigo, sala_id, numero_equipo, descripcion, estado, observaciones, new_codigo=None): 
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -1262,30 +1249,27 @@ class EquiposModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error updating equipo: {e}")
+            print(f'Error updating equipo: {e}')
             return False
         finally:
             conn.close()
 
     def delete_equipo(self, codigo):
-        """Deletes a piece of equipment from the database by its code."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute('DELETE FROM equipos WHERE codigo = ?', (codigo,))
             conn.commit()
         except sqlite3.Error as e:
-            print(f"Error deleting equipo: {e}") # Handle potential FK constraints
+            print(f'Error deleting equipo: {e}') # Handle potential FK constraints
         finally:
             conn.close()
 
 class ProyectosCurricularesModel:
-    """Manages database operations for the 'proyectos_curriculares' table."""
     def __init__(self):
         self.db_manager = DatabaseManager()
 
-    def get_all_proyectos(self, search_term=""):
-        """Retrieves all curricular projects, with an optional search filter."""
+    def get_all_proyectos(self, search_term=''):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute(
@@ -1297,7 +1281,6 @@ class ProyectosCurricularesModel:
         return proyectos
 
     def add_proyecto(self, nombre):
-        """Adds a new curricular project."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -1305,13 +1288,12 @@ class ProyectosCurricularesModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding proyecto curricular: {e}")
+            print(f'Error adding proyecto curricular: {e}')
             return False
         finally:
             conn.close()
 
     def update_proyecto(self, id, nombre):
-        """Updates an existing curricular project's name."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -1319,13 +1301,12 @@ class ProyectosCurricularesModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error updating proyecto curricular: {e}")
+            print(f'Error updating proyecto curricular: {e}')
             return False
         finally:
             conn.close()
 
     def delete_proyecto(self, id):
-        """Deletes a curricular project by its ID."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -1335,18 +1316,17 @@ class ProyectosCurricularesModel:
             conn.commit()
             return True
         except sqlite3.Error as e:
-            print(f"Error deleting proyecto curricular: {e}")
+            print(f'Error deleting proyecto curricular: {e}')
             return False
         finally:
             conn.close()
 
 class SedesModel:
-    """Manages database operations for the 'sedes' table."""
     def __init__(self):
         self.db_manager = DatabaseManager()
 
-    def get_all_sedes(self, search_term=""):
-        """Retrieves all campus locations (sedes), with an optional search filter."""
+    # Retrieves all campus locations (sedes), with an optional search filter.
+    def get_all_sedes(self, search_term=''):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute(
@@ -1358,7 +1338,6 @@ class SedesModel:
         return sedes
 
     def add_sede(self, nombre):
-        """Adds a new campus location."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -1366,13 +1345,12 @@ class SedesModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error adding sede: {e}")
+            print(f'Error adding sede: {e}')
             return False
         finally:
             conn.close()
 
     def update_sede(self, id, nombre):
-        """Updates an existing campus location's name."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
@@ -1380,22 +1358,21 @@ class SedesModel:
             conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            print(f"Error updating sede: {e}")
+            print(f'Error updating sede: {e}')
             return False
         finally:
             conn.close()
 
     def delete_sede(self, id):
-        """Deletes a campus location by its ID."""
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Note: This will fail if inventory items are assigned to this location.
+            # Note: This will fail if inventory items are assigned to this location (EXPECTED BEHAVIOUR)
             cursor.execute('DELETE FROM sedes WHERE id = ?', (id,))
             conn.commit()
             return True
         except sqlite3.Error as e:
-            print(f"Error deleting sede: {e}")
+            print(f'Error deleting sede: {e}')
             return False
         finally:
             conn.close()
@@ -1408,7 +1385,7 @@ class DashboardModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT COUNT(*) FROM salas")
+            cursor.execute('SELECT COUNT(*) FROM salas')
             total_rooms = cursor.fetchone()[0]
             cursor.execute('''
                 SELECT COUNT(DISTINCT sala_id) FROM (
@@ -1433,9 +1410,9 @@ class DashboardModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT COUNT(*) FROM inventario WHERE estado != 'DAÑADO'")
+            cursor.execute('SELECT COUNT(*) FROM inventario WHERE estado != "DAÑADO"')
             total_equipment = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM inventario WHERE estado = 'EN USO'")
+            cursor.execute('SELECT COUNT(*) FROM inventario WHERE estado = "EN USO"')
             in_use_equipment = cursor.fetchone()[0]
             return {
                 'total': total_equipment,
@@ -1460,6 +1437,7 @@ class DashboardModel:
                 LIMIT 10
             ''')
             active_loans = cursor.fetchall()
+
             # Estudiantes - equipos
             cursor.execute('''
                 SELECT 'Equipo' as type, e.nombre as borrower, i.descripcion as item, 
@@ -1472,6 +1450,7 @@ class DashboardModel:
                 LIMIT 10
             ''')
             active_loans.extend(cursor.fetchall())
+
             # Profesores - salas
             cursor.execute('''
                 SELECT 'Sala' as type, p.nombre as borrower, s.nombre as item, 
@@ -1484,6 +1463,7 @@ class DashboardModel:
                 LIMIT 10
             ''')
             active_loans.extend(cursor.fetchall())
+
             # Estudiantes - salas
             cursor.execute('''
                 SELECT 'Sala' as type, e.nombre as borrower, s.nombre as item, 
@@ -1496,7 +1476,8 @@ class DashboardModel:
                 LIMIT 10
             ''')
             active_loans.extend(cursor.fetchall())
-            # Ordenar y limitar a 10 más recientes
+
+            # Limit to the 10 most recent
             active_loans.sort(key=lambda x: x[3], reverse=True)
             return active_loans[:10]
         finally:
@@ -1506,7 +1487,7 @@ class DashboardModel:
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         try:
-            # Equipos dañados
+            # Damaged equipment
             cursor.execute('''
                 SELECT codigo, descripcion, estado, marca_serie
                 FROM inventario 
@@ -1514,7 +1495,8 @@ class DashboardModel:
                 ORDER BY codigo
             ''')
             damaged_equipment = cursor.fetchall()
-            # Equipos a revisar
+
+            # Equipment to review
             cursor.execute('''
                 SELECT DISTINCT i.codigo, i.descripcion, 'REVISAR' as estado, pep.observaciones
                 FROM prestamos_equipos_profesores pep
