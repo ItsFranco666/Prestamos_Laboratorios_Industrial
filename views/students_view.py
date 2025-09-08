@@ -318,13 +318,14 @@ class StudentDialog(ctk.CTkToplevel):
     Clase para la ventana de diálogo (popup) que se usa tanto para agregar
     como para editar estudiantes.
     """
-    def __init__(self, parent, title, student_data_for_dialog=None, student_model=None):
+    def __init__(self, parent, title, student_data_for_dialog=None, student_model=None, student_code=None):
         """
         Constructor del diálogo de estudiante.
         :param parent: La ventana padre.
         :param title: El título de la ventana de diálogo.
         :param student_data_for_dialog: Datos del estudiante si se está editando, None si se agrega.
         :param student_model: La instancia del modelo de datos de estudiante.
+        :param student_code: El código del estudiante a pre-rellenar.
         """
         super().__init__(parent)
         self.title(title) # Establece el título.
@@ -365,6 +366,9 @@ class StudentDialog(ctk.CTkToplevel):
 
         # Configura la columna de los campos de entrada para que se expanda.
         main_frame.grid_columnconfigure(1, weight=1)
+
+        if student_code:
+            self.codigo_entry.insert(0, student_code)
 
         # Si estamos en modo de edición, llena los campos con los datos del estudiante.
         if self.editing:

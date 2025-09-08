@@ -304,13 +304,14 @@ class ProfessorDialog(ctk.CTkToplevel):
     Clase para la ventana de diálogo (popup) que se usa tanto para agregar
     como para editar profesores.
     """
-    def __init__(self, parent, title, professor_data_for_dialog=None, professor_model=None):
+    def __init__(self, parent, title, professor_data_for_dialog=None, professor_model=None, professor_id=None):
         """
         Constructor del diálogo de profesor.
         :param parent: La ventana padre.
         :param title: El título de la ventana de diálogo.
         :param professor_data_for_dialog: Datos del profesor si se está editando, None si se agrega.
         :param professor_model: La instancia del modelo de datos de profesor.
+        :param professor_id: El ID del profesor a pre-rellenar.
         """
         super().__init__(parent)
         self.title(title) # Establece el título.
@@ -347,6 +348,9 @@ class ProfessorDialog(ctk.CTkToplevel):
 
         # Configura la columna de los campos de entrada para que se expanda.
         main_frame.grid_columnconfigure(1, weight=1)
+
+        if professor_id:
+            self.cedula_entry.insert(0, professor_id)
 
         # Si estamos en modo de edición, llena los campos con los datos del profesor.
         if self.editing:

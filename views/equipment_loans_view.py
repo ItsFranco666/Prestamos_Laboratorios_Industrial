@@ -6,6 +6,8 @@ from datetime import datetime
 import os, sys
 import cv2
 from PIL import Image, ImageTk
+from views.students_view import StudentDialog
+from views.profesores_view import ProfessorDialog
 
 class EquipmentLoansView(ctk.CTkFrame):
     def __init__(self, parent):
@@ -227,24 +229,31 @@ class EquipmentLoansView(ctk.CTkFrame):
             user_exists = self.profesor_model.get_professor_by_id(user_id)
         
         if not user_exists:
-            # Alerta de que no existe
-            messagebox.showerror("Usuario no encontrado", f"El {user_type.lower()} con identificador '{user_id}' no existe en la base de datos.", parent=self)
-            # Preguntar si se desea añadir
-            if messagebox.askyesno("Crear Nuevo Usuario", f"¿Desea crear un nuevo perfil de {user_type.lower()} para '{user_id}'?", parent=self):
-                # Crear registro en blanco según el tipo
-                success = False
-                if user_type == "Estudiante":
-                    success = self.student_model.add_blank_student(user_id)
-                else: # Profesor
-                    success = self.profesor_model.add_blank_profesor(user_id)
-                
-                if not success:
-                    messagebox.showerror("Error", f"No se pudo crear el nuevo perfil de {user_type.lower()}. El préstamo ha sido cancelado.", parent=self)
-                    return # Cancelar si la creación falla
-                # Si se crea, se puede continuar
-            else:
-                # Si el usuario dice no, cancelar el préstamo
-                return
+            messagebox.showerror("Usuario no encontrado", f"El {user_type.lower()} con identificador '{user_id}' no existe.", parent=self)
+            if user_type == "Estudiante":
+                dialog = StudentDialog(self, "Agregar Estudiante", student_model=self.student_model, student_code=user_id)
+                if dialog.result:
+                    codigo, nombre, cedula, proyecto_id = dialog.result
+                    if self.student_model.add_student(codigo, nombre, cedula, proyecto_id):
+                        messagebox.showinfo("Éxito", f"Estudiante '{nombre}' agregado correctamente.", parent=self)
+                        user_exists = True # Marcar como existente para continuar
+                    else:
+                        messagebox.showerror("Error", "No se pudo agregar el estudiante.", parent=self)
+                        return # Cancelar préstamo
+                else:
+                    return # Cancelar si el usuario cierra el diálogo
+            else: # Profesor
+                dialog = ProfessorDialog(self, "Agregar Profesor", professor_model=self.profesor_model, professor_id=user_id)
+                if dialog.result:
+                    cedula, nombre, proyecto_id = dialog.result
+                    if self.profesor_model.add_profesor(cedula, nombre, proyecto_id):
+                        messagebox.showinfo("Éxito", f"Profesor '{nombre}' agregado correctamente.", parent=self)
+                        user_exists = True # Marcar como existente para continuar
+                    else:
+                        messagebox.showerror("Error", "No se pudo agregar el profesor.", parent=self)
+                        return # Cancelar préstamo
+                else:
+                    return # Cancelar si el usuario cierra el diálogo
 
         # --- Si todas las validaciones pasan (o se crearon los registros), proceder a guardar ---
         sala_nombre = self.sala_combo.get()
