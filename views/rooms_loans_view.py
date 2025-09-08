@@ -330,7 +330,7 @@ class RoomLoansView(ctk.CTkFrame):
         self.filter_frame.grid_columnconfigure(7, weight=1)
         
         ctk.CTkLabel(self.filter_frame, text="Buscar:", font=get_font("normal")).grid(row=0, column=0, padx=(10,5), pady=10, sticky="w")
-        self.search_entry = ctk.CTkEntry(self.filter_frame, placeholder_text="Usuario, sala, equipo...", font=get_font("normal"))
+        self.search_entry = ctk.CTkEntry(self.filter_frame, placeholder_text="Usuario, cédula, código, sala, equipo...", font=get_font("normal"))
         self.search_entry.grid(row=0, column=1, padx=5, pady=10, sticky="ew")
         self.search_entry.bind("<KeyRelease>", self._apply_filters)
         

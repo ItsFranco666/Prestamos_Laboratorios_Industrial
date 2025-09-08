@@ -682,10 +682,10 @@ class RoomLoanModel:
 
         if search_term:
             search_like = f'%{search_term}%'
-            student_where.append('(e.nombre LIKE ? OR s.nombre LIKE ? OR CAST(eq.numero_equipo AS TEXT) LIKE ? OR pse.equipo_codigo LIKE ?)')
-            professor_where.append('(p.nombre LIKE ? OR s.nombre LIKE ?)')
-            student_params.extend([search_like, search_like, search_like, search_like])
-            professor_params.extend([search_like, search_like])
+            student_where.append('(e.nombre LIKE ? OR CAST(e.cedula AS TEXT) LIKE ? OR CAST(e.codigo AS TEXT) LIKE ? OR s.nombre LIKE ? OR CAST(eq.numero_equipo AS TEXT) LIKE ? OR pse.equipo_codigo LIKE ?)')
+            professor_where.append('(p.nombre LIKE ? OR CAST(p.cedula AS TEXT) LIKE ? OR s.nombre LIKE ?)')
+            student_params.extend([search_like, search_like, search_like, search_like, search_like, search_like])
+            professor_params.extend([search_like, search_like, search_like])
 
         status_map = {'En Préstamo': 'IS NULL', 'Finalizado': 'IS NOT NULL'}
         if status_filter in status_map:
@@ -942,10 +942,10 @@ class EquipmentLoanModel:
 
         if search_term:
             search_like = f'%{search_term}%'
-            student_where_clauses.append('(e.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pee.titulo_practica LIKE ?)')
-            professor_where_clauses.append('(p.nombre LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pep.titulo_practica LIKE ?)')
-            student_params.extend([search_like, search_like, search_like, search_like])
-            professor_params.extend([search_like, search_like, search_like, search_like])
+            student_where_clauses.append('(e.nombre LIKE ? OR CAST(e.cedula AS TEXT) LIKE ? OR CAST(e.codigo AS TEXT) LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pee.titulo_practica LIKE ?)')
+            professor_where_clauses.append('(p.nombre LIKE ? OR CAST(p.cedula AS TEXT) LIKE ? OR inv.descripcion LIKE ? OR inv.codigo LIKE ? OR pep.titulo_practica LIKE ?)')
+            student_params.extend([search_like, search_like, search_like, search_like, search_like, search_like])
+            professor_params.extend([search_like, search_like, search_like, search_like, search_like])
 
         status_map = {'En Préstamo': 1, 'Devuelto': 0}
         if status_filter in status_map:
