@@ -464,7 +464,7 @@ class InventoryModel:
         conn.close()
         return equipment
 
-    def get_campus(self):
+    def get_sedes(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT id, nombre FROM sedes ORDER BY nombre ASC')
