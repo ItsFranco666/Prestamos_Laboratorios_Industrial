@@ -6,6 +6,8 @@ from datetime import datetime
 import os, sys
 import cv2
 from PIL import Image, ImageTk
+from views.students_view import StudentDialog
+from views.profesores_view import ProfessorDialog
 
 class RoomLoansView(ctk.CTkFrame):
     """
@@ -266,13 +268,31 @@ class RoomLoansView(ctk.CTkFrame):
         user_exists = self.student_model.get_student_by_code_or_id(user_id) if user_type == "Estudiante" else self.profesor_model.get_professor_by_id(user_id)
         
         if not user_exists:
-            if messagebox.askyesno("Crear Nuevo Perfil", f"El {user_type.lower()} con ID '{user_id}' no existe.\n¿Desea crear un nuevo perfil para proceder con el préstamo?", parent=self):
-                success = self.student_model.add_blank_student(user_id) if user_type == "Estudiante" else self.profesor_model.add_blank_profesor(user_id)
-                if not success:
-                    messagebox.showerror("Error", f"No se pudo crear el nuevo perfil. El préstamo ha sido cancelado.", parent=self)
-                    return
-            else:
-                return
+            messagebox.showerror("Usuario no encontrado", f"El {user_type.lower()} con identificador '{user_id}' no existe.", parent=self)
+            if user_type == "Estudiante":
+                dialog = StudentDialog(self, "Agregar Estudiante", student_model=self.student_model, student_code=user_id)
+                if dialog.result:
+                    codigo, nombre, cedula, proyecto_id = dialog.result
+                    if self.student_model.add_student(codigo, nombre, cedula, proyecto_id):
+                        messagebox.showinfo("Éxito", f"Estudiante '{nombre}' agregado correctamente.", parent=self)
+                        user_exists = True # Marcar como existente para continuar
+                    else:
+                        messagebox.showerror("Error", "No se pudo agregar el estudiante.", parent=self)
+                        return # Cancelar préstamo
+                else:
+                    return # Cancelar si el usuario cierra el diálogo
+            else: # Profesor
+                dialog = ProfessorDialog(self, "Agregar Profesor", professor_model=self.profesor_model, professor_id=user_id)
+                if dialog.result:
+                    cedula, nombre, proyecto_id = dialog.result
+                    if self.profesor_model.add_profesor(cedula, nombre, proyecto_id):
+                        messagebox.showinfo("Éxito", f"Profesor '{nombre}' agregado correctamente.", parent=self)
+                        user_exists = True # Marcar como existente para continuar
+                    else:
+                        messagebox.showerror("Error", "No se pudo agregar el profesor.", parent=self)
+                        return # Cancelar préstamo
+                else:
+                    return # Cancelar si el usuario cierra el diálogo
 
         monitor_nombre = self.monitor_combo.get()
         observaciones = self.obs_textbox.get("1.0", "end-1c").strip()
