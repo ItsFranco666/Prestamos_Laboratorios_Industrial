@@ -331,8 +331,8 @@ class EquipmentLoansView(ctk.CTkFrame):
         table_container_frame.grid_rowconfigure(0, weight=1)
         table_container_frame.grid_columnconfigure(0, weight=1)
         
-        # Nuevo orden de columnas: tipo_usuario, fecha_entrega, estado_prestamo, usuario_id, usuario_nombre, ...
-        columns = ("tipo_usuario", "fecha_entrega", "estado_prestamo", "usuario_id", "usuario_nombre", "equipo_desc", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "fecha_devolucion", "laboratorista_devolucion", "monitor_devolucion", "firma", "observaciones")
+        # Nuevo orden de columnas: tipo_usuario, fecha_entrega, estado_prestamo, usuario_id, usuario_nombre, equipo_codigo, equipo_desc, ...
+        columns = ("tipo_usuario", "fecha_entrega", "estado_prestamo", "usuario_id", "usuario_nombre", "equipo_codigo", "equipo_desc", "titulo_practica", "laboratorista_entrega", "monitor_entrega", "fecha_devolucion", "laboratorista_devolucion", "monitor_devolucion", "firma", "observaciones")
         self.tree = ttk.Treeview(table_container_frame, columns=columns, show="headings", style="Modern.Treeview")
         
         # Configure headers in the new order
@@ -341,6 +341,7 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.heading("estado_prestamo", text="📊 Estado", anchor='w')
         self.tree.heading("usuario_id", text="🆔 ID", anchor='w')
         self.tree.heading("usuario_nombre", text="👤 Nombre Usuario", anchor='w')
+        self.tree.heading("equipo_codigo", text="Cód. Equipo", anchor='w')
         self.tree.heading("equipo_desc", text="💻 Equipo", anchor='w')
         self.tree.heading("titulo_practica", text="📋 Título Práctica", anchor='w')
         self.tree.heading("laboratorista_entrega", text="👨‍🔬 Lab. Entrega", anchor='w')
@@ -356,16 +357,17 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.tree.column("fecha_entrega", width=150, stretch=False, minwidth=130, anchor='center')
         self.tree.column("estado_prestamo", width=100, stretch=False, minwidth=80)
         self.tree.column("usuario_id", width=110, stretch=False, minwidth=90)
-        self.tree.column("usuario_nombre", width=230, stretch=False, minwidth=190)
-        self.tree.column("equipo_desc", width=220, stretch=False, minwidth=180)
-        self.tree.column("titulo_practica", width=190, stretch=False, minwidth=180)
-        self.tree.column("laboratorista_entrega", width=260, stretch=False, minwidth=200)
-        self.tree.column("monitor_entrega", width=260, stretch=False, minwidth=200)
-        self.tree.column("fecha_devolucion", width=180, stretch=False, minwidth=150, anchor='center')
-        self.tree.column("laboratorista_devolucion", width=260, stretch=False, minwidth=200)
-        self.tree.column("monitor_devolucion", width=260, stretch=False, minwidth=200)
-        self.tree.column("firma", width=120, stretch=False, minwidth=100)
-        self.tree.column("observaciones", width=300, stretch=True, minwidth=200)
+        self.tree.column("usuario_nombre", width=380, stretch=False, minwidth=180)
+        self.tree.column("equipo_codigo", width=110, stretch=False, minwidth=100)
+        self.tree.column("equipo_desc", width=200, stretch=False, minwidth=180)
+        self.tree.column("titulo_practica", width=180, stretch=False, minwidth=170)
+        self.tree.column("laboratorista_entrega", width=200, stretch=False, minwidth=180)
+        self.tree.column("monitor_entrega", width=200, stretch=False, minwidth=180)
+        self.tree.column("fecha_devolucion", width=150, stretch=False, minwidth=140, anchor='center')
+        self.tree.column("laboratorista_devolucion", width=200, stretch=False, minwidth=180)
+        self.tree.column("monitor_devolucion", width=200, stretch=False, minwidth=180)
+        self.tree.column("firma", width=100, stretch=False, minwidth=90)
+        self.tree.column("observaciones", width=200, stretch=True, minwidth=190)
         
         v_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.yview, corner_radius=8, width=16)
         h_scroll = ctk.CTkScrollbar(table_container_frame, command=self.tree.xview, orientation="horizontal", corner_radius=8, height=16)
@@ -428,6 +430,7 @@ class EquipmentLoansView(ctk.CTkFrame):
                 estado_prestamo,
                 user_id,
                 nombre,
+                equipo_codigo or '',
                 equipo_desc,
                 titulo_practica or '',
                 lab_ent or 'N/A',
