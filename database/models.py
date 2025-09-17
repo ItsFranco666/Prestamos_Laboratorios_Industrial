@@ -727,7 +727,8 @@ class RoomLoanModel:
                 print(f'Database error on room loan fetch: {e}')
 
         conn.close()
-        all_loans.sort(key=lambda x: x[4], reverse=True) # Sort by fecha_entrada DESC
+        # Ordenar primero por estado (activos primero) y luego por fecha_entrada (más reciente primero)
+        all_loans.sort(key=lambda x: (x[5] is not None, x[4]), reverse=False)
         return all_loans
 
     # Fetches a specific room loan
@@ -985,8 +986,8 @@ class EquipmentLoanModel:
                 
         conn.close()
         
-        # Sort the combined results in Python by delivery date
-        all_loans.sort(key=lambda x: x[4] if x[4] else '', reverse=True)
+        # Ordenar primero por estado (activos primero) y luego por fecha_entrega (más reciente primero)
+        all_loans.sort(key=lambda x: (x[5] is not None, x[4] or ''), reverse=False)
         
         return all_loans
 
