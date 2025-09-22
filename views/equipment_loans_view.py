@@ -8,6 +8,7 @@ import cv2
 from PIL import Image, ImageTk
 from views.students_view import StudentDialog
 from views.profesores_view import ProfessorDialog
+from CTkListbox import CTkListbox
 
 class EquipmentLoansView(ctk.CTkFrame):
     def __init__(self, parent):
@@ -76,6 +77,12 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.equipo_code_entry = ctk.CTkEntry(form_grid, placeholder_text="Ingrese el código del equipo a prestar", font=get_font("normal"))
         self.equipo_code_entry.grid(row=1, column=1, padx=5, pady=10, sticky="ew")
 
+        # --- Autocomplete Suggestions ---
+        self.suggestion_box = None
+        self.equipo_code_entry.bind("<KeyRelease>", self._update_suggestions)
+        self.equipo_code_entry.bind("<FocusOut>", self._hide_suggestions_on_focus_out)
+        # ---------------------------------
+
         # Sala
         ctk.CTkLabel(form_grid, text="Sala:", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="w")
         self.salas_data = self.room_model.get_all_rooms_with_id_for_dropdown()
@@ -133,7 +140,43 @@ class EquipmentLoansView(ctk.CTkFrame):
         # Botón de guardar
         save_btn = ctk.CTkButton(form_grid, text="Guardar Préstamo", command=self._save_loan, font=get_font("normal", "bold"))
         save_btn.grid(row=9, column=0, columnspan=2, pady=20, padx=5, sticky="ew")
-    
+
+    def _update_suggestions(self, event=None):
+        query = self.equipo_code_entry.get()
+        if not query:
+            self._hide_suggestions()
+            return
+
+        suggestions = self.inventory_model.get_equipment_by_partial_code(query)
+        if not suggestions:
+            self._hide_suggestions()
+            return
+
+        if self.suggestion_box is None or not self.suggestion_box.winfo_exists():
+            self.suggestion_box = SuggestionBox(self, self.equipo_code_entry, self._on_suggestion_selected)
+
+        self.suggestion_box.update_suggestions(suggestions)
+        self.suggestion_box.show()
+
+    def _on_suggestion_selected(self, selected_code):
+        self.equipo_code_entry.delete(0, 'end')
+        self.equipo_code_entry.insert(0, selected_code)
+        self._hide_suggestions()
+
+    def _hide_suggestions(self):
+        if self.suggestion_box and self.suggestion_box.winfo_exists():
+            self.suggestion_box.hide()
+
+    def _hide_suggestions_on_focus_out(self, event=None):
+        # Delay hiding to allow click events on the suggestion box
+        self.after(200, self._hide_suggestions_if_focus_lost)
+
+    def _hide_suggestions_if_focus_lost(self):
+        # Hide only if focus is not on the entry or the suggestion box itself
+        focussed_widget = self.focus_get()
+        if focussed_widget != self.equipo_code_entry and (not self.suggestion_box or not self.suggestion_box.is_mouse_over()):
+            self._hide_suggestions()
+
     def _scan_qr_code(self):
         """Activa la cámara para escanear un QR usando el detector de OpenCV."""
         cap = cv2.VideoCapture(0)
@@ -621,15 +664,92 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
 
         # Botones
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.grid(row=5, column=0, columnspan=2, pady=20, sticky="ew")
+        button_frame.grid(row=5, column=0, columnspan=2, pady=(20, 0), sticky="ew")
+        button_frame.columnconfigure(0, weight=1)
 
-        save_btn = ctk.CTkButton(button_frame, text="Confirmar Devolución", command=self.save, font=get_font("normal"))
-        save_btn.pack(side="left", expand=True, padx=5)
+        self.save_btn = ctk.CTkButton(button_frame, text="Registrar Devolución", command=self._save_return, font=get_font("normal", "bold"), fg_color=('#ffa154', '#c95414'), hover_color=('#ff8c33', '#b34a0e'), text_color=("#222","#fff"))
+        self.save_btn.grid(row=0, column=1, padx=5, pady=5, sticky="e")
+        self.cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.destroy, font=get_font("normal", "bold"))
+        self.cancel_btn.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+
+class SuggestionBox(ctk.CTkToplevel):
+    def __init__(self, parent, entry_widget, callback):
+        super().__init__(parent)
+        self.entry_widget = entry_widget
+        self.callback = callback
+
+        self.overrideredirect(True)
+        self.wm_attributes("-topmost", True)
+
+        self.listbox = CTkListbox(self, command=self._on_select)
+        self.listbox.pack(expand=True, fill="both")
+
+        self.bind("<FocusOut>", self._on_focus_out)
+        self.listbox.bind("<Enter>", self._on_mouse_enter)
+        self.listbox.bind("<Leave>", self._on_mouse_leave)
+        self._mouse_over = False
+
+    def show(self):
+        x = self.entry_widget.winfo_rootx()
+        y = self.entry_widget.winfo_rooty() + self.entry_widget.winfo_height()
+        width = self.entry_widget.winfo_width()
+        self.geometry(f"{width}x150+{x}+{y}")
+        self.lift()
+        self.deiconify()
+
+    def hide(self):
+        self.withdraw()
+
+    def update_suggestions(self, suggestions):
+        # Clear existing items safely by removing the listbox and recreating it
+        try:
+            self.listbox.destroy()
+            self.listbox = CTkListbox(self, command=self._on_select)
+            self.listbox.pack(expand=True, fill="both")
+            self.listbox.bind("<Enter>", self._on_mouse_enter)
+            self.listbox.bind("<Leave>", self._on_mouse_leave)
+        except Exception as e:
+            print(f"Error updating listbox: {e}")
+            return
         
-        cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.cancel, fg_color="gray", font=get_font("normal"))
-        cancel_btn.pack(side="right", expand=True, padx=5)
-        
-        self.wait_window(self)
+        # Add new suggestions if there are any
+        if suggestions:
+            for code, name in suggestions:
+                try:
+                    self.listbox.insert("end", f"{code} - {name or 'N/A'}")
+                except Exception as e:
+                    print(f"Error adding suggestion {code}: {e}")
+
+    def _on_select(self, selected_item):
+        code = selected_item.split(" - ")[0]
+        self.callback(code)
+        self.hide()
+
+    def _on_focus_out(self, event=None):
+        if not self.is_mouse_over():
+            self.hide()
+
+    def _on_mouse_enter(self, event=None):
+        self._mouse_over = True
+
+    def _on_mouse_leave(self, event=None):
+        self._mouse_over = False
+
+    def is_mouse_over(self):
+        return self._mouse_over
+
+    def _save_return(self):
+        # This is a placeholder. Implement the save logic here.
+        self.result = True # Assume success for now
+        self.destroy()
+
+    def _center_dialog(self):
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'{width}x{height}+{x}+{y}')
 
     def _set_app_icon(self):
         icon_path_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico")
@@ -716,6 +836,8 @@ class EquipmentEditDialog(ctk.CTkToplevel):
         self.lift()
         self._set_app_icon()
         self._center_dialog()
+        # TODO: Implement the UI and logic for the edit dialog.
+        pass
 
         # Guardar modelos
         self.loan_model = loan_model

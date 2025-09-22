@@ -464,6 +464,19 @@ class InventoryModel:
         conn.close()
         return equipment
 
+    def get_equipment_by_partial_code(self, partial_code):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT codigo, descripcion FROM inventario 
+            WHERE codigo LIKE ? AND estado = 'DISPONIBLE'
+            ORDER BY codigo ASC 
+            LIMIT 10
+        ''', (f'{partial_code}%',))
+        items = cursor.fetchall()
+        conn.close()
+        return items
+
     def get_sedes(self):
         conn = self.db_manager.get_connection()
         cursor = conn.cursor()
