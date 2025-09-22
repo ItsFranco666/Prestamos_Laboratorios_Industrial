@@ -8,6 +8,7 @@ import cv2
 from PIL import Image, ImageTk
 from views.students_view import StudentDialog
 from views.profesores_view import ProfessorDialog
+from views.components.suggestion_box import SuggestionBox
 
 class RoomLoansView(ctk.CTkFrame):
     """
@@ -82,6 +83,11 @@ class RoomLoansView(ctk.CTkFrame):
         
         self.user_id_entry = ctk.CTkEntry(user_id_frame, placeholder_text="Código de estudiante o cédula de profesor", font=get_font("normal"))
         self.user_id_entry.grid(row=0, column=0, sticky="ew")
+
+        # --- Autocomplete Suggestions ---
+        self.user_suggestion_box = None
+        self.user_id_entry.bind("<KeyRelease>", self._update_user_suggestions)
+        self.user_id_entry.bind("<FocusOut>", lambda e: self._hide_suggestions_on_focus_out('user'))
         
         # QR Scan Button
         self.scan_btn = ctk.CTkButton(user_id_frame, text="Scan QR", command=self._scan_qr_code, width=80)
@@ -137,6 +143,51 @@ class RoomLoansView(ctk.CTkFrame):
         save_btn.grid(row=7, column=0, columnspan=2, pady=20, padx=5, sticky="ew")
 
         self._on_user_type_change()
+
+    def _update_user_suggestions(self, event=None):
+        query = self.user_id_entry.get()
+        if not query:
+            self._hide_suggestions('user')
+            return
+
+        user_type = self.user_type_combo.get()
+        suggestions = []
+        format_function = None
+
+        if user_type == "Estudiante":
+            suggestions = self.student_model.get_students_by_partial_query(query)
+            format_function = lambda item: f"{item[0]} - {item[1]} - {item[2]}"
+        else: # Profesor
+            suggestions = self.profesor_model.get_professors_by_partial_query(query)
+            format_function = lambda item: f"{item[0]} - {item[1]}"
+
+        if not suggestions:
+            self._hide_suggestions('user')
+            return
+
+        if self.user_suggestion_box is None or not self.user_suggestion_box.winfo_exists():
+            self.user_suggestion_box = SuggestionBox(self, self.user_id_entry, self._on_user_suggestion_selected)
+
+        self.user_suggestion_box.update_suggestions(suggestions, format_function)
+        self.user_suggestion_box.show()
+
+    def _on_user_suggestion_selected(self, selected_identifier):
+        self.user_id_entry.delete(0, 'end')
+        self.user_id_entry.insert(0, selected_identifier)
+        self._hide_suggestions('user')
+
+    def _hide_suggestions(self, box_type):
+        if box_type == 'user' and self.user_suggestion_box and self.user_suggestion_box.winfo_exists():
+            self.user_suggestion_box.hide()
+
+    def _hide_suggestions_on_focus_out(self, box_type):
+        self.after(200, lambda: self._hide_suggestions_if_focus_lost(box_type))
+
+    def _hide_suggestions_if_focus_lost(self, box_type):
+        focussed_widget = self.focus_get()
+        if box_type == 'user':
+            if focussed_widget != self.user_id_entry and (not self.user_suggestion_box or not self.user_suggestion_box.is_mouse_over()):
+                self._hide_suggestions('user')
     
     def _scan_qr_code(self):
         """Activa la cámara para escanear un QR usando el detector de OpenCV."""

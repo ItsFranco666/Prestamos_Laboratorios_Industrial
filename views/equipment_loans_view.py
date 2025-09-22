@@ -8,7 +8,7 @@ import cv2
 from PIL import Image, ImageTk
 from views.students_view import StudentDialog
 from views.profesores_view import ProfessorDialog
-from CTkListbox import CTkListbox
+from views.components.suggestion_box import SuggestionBox
 
 class EquipmentLoansView(ctk.CTkFrame):
     def __init__(self, parent):
@@ -77,11 +77,6 @@ class EquipmentLoansView(ctk.CTkFrame):
         self.equipo_code_entry = ctk.CTkEntry(form_grid, placeholder_text="Ingrese el código del equipo a prestar", font=get_font("normal"))
         self.equipo_code_entry.grid(row=1, column=1, padx=5, pady=10, sticky="ew")
 
-        # --- Autocomplete Suggestions ---
-        self.suggestion_box = None
-        self.equipo_code_entry.bind("<KeyRelease>", self._update_suggestions)
-        self.equipo_code_entry.bind("<FocusOut>", self._hide_suggestions_on_focus_out)
-        # ---------------------------------
 
         # Sala
         ctk.CTkLabel(form_grid, text="Sala:", font=get_font("normal")).grid(row=2, column=0, padx=5, pady=10, sticky="w")
@@ -105,6 +100,15 @@ class EquipmentLoansView(ctk.CTkFrame):
         # QR Scan Button
         self.scan_btn = ctk.CTkButton(user_id_frame, text="Scan QR", command=self._scan_qr_code, width=80)
         self.scan_btn.grid(row=0, column=1, padx=(10, 0), sticky="e")
+
+        # --- Autocomplete Suggestions ---
+        self.equipment_suggestion_box = None
+        self.user_suggestion_box = None
+        self.equipo_code_entry.bind("<KeyRelease>", self._update_equipment_suggestions)
+        self.equipo_code_entry.bind("<FocusOut>", lambda e: self._hide_suggestions_on_focus_out('equipment'))
+        self.user_id_entry.bind("<KeyRelease>", self._update_user_suggestions)
+        self.user_id_entry.bind("<FocusOut>", lambda e: self._hide_suggestions_on_focus_out('user'))
+        # ---------------------------------
 
         # Número de estudiantes (solo para estudiantes)
         ctk.CTkLabel(form_grid, text="Número de Estudiantes:", font=get_font("normal")).grid(row=4, column=0, padx=5, pady=10, sticky="w")
@@ -141,41 +145,77 @@ class EquipmentLoansView(ctk.CTkFrame):
         save_btn = ctk.CTkButton(form_grid, text="Guardar Préstamo", command=self._save_loan, font=get_font("normal", "bold"))
         save_btn.grid(row=9, column=0, columnspan=2, pady=20, padx=5, sticky="ew")
 
-    def _update_suggestions(self, event=None):
+    def _update_equipment_suggestions(self, event=None):
         query = self.equipo_code_entry.get()
         if not query:
-            self._hide_suggestions()
+            self._hide_suggestions('equipment')
             return
 
         suggestions = self.inventory_model.get_equipment_by_partial_code(query)
         if not suggestions:
-            self._hide_suggestions()
+            self._hide_suggestions('equipment')
             return
 
-        if self.suggestion_box is None or not self.suggestion_box.winfo_exists():
-            self.suggestion_box = SuggestionBox(self, self.equipo_code_entry, self._on_suggestion_selected)
+        if self.equipment_suggestion_box is None or not self.equipment_suggestion_box.winfo_exists():
+            self.equipment_suggestion_box = SuggestionBox(self, self.equipo_code_entry, self._on_equipment_suggestion_selected)
 
-        self.suggestion_box.update_suggestions(suggestions)
-        self.suggestion_box.show()
+        self.equipment_suggestion_box.update_suggestions(suggestions, lambda item: f"{item[0]} - {item[1] or 'N/A'}")
+        self.equipment_suggestion_box.show()
 
-    def _on_suggestion_selected(self, selected_code):
+    def _on_equipment_suggestion_selected(self, selected_code):
         self.equipo_code_entry.delete(0, 'end')
         self.equipo_code_entry.insert(0, selected_code)
-        self._hide_suggestions()
+        self._hide_suggestions('equipment')
 
-    def _hide_suggestions(self):
-        if self.suggestion_box and self.suggestion_box.winfo_exists():
-            self.suggestion_box.hide()
+    def _hide_suggestions(self, box_type):
+        if box_type == 'equipment' and self.equipment_suggestion_box and self.equipment_suggestion_box.winfo_exists():
+            self.equipment_suggestion_box.hide()
+        elif box_type == 'user' and self.user_suggestion_box and self.user_suggestion_box.winfo_exists():
+            self.user_suggestion_box.hide()
 
-    def _hide_suggestions_on_focus_out(self, event=None):
-        # Delay hiding to allow click events on the suggestion box
-        self.after(200, self._hide_suggestions_if_focus_lost)
+    def _hide_suggestions_on_focus_out(self, box_type):
+        self.after(200, lambda: self._hide_suggestions_if_focus_lost(box_type))
 
-    def _hide_suggestions_if_focus_lost(self):
-        # Hide only if focus is not on the entry or the suggestion box itself
+    def _hide_suggestions_if_focus_lost(self, box_type):
         focussed_widget = self.focus_get()
-        if focussed_widget != self.equipo_code_entry and (not self.suggestion_box or not self.suggestion_box.is_mouse_over()):
-            self._hide_suggestions()
+        if box_type == 'equipment':
+            if focussed_widget != self.equipo_code_entry and (not self.equipment_suggestion_box or not self.equipment_suggestion_box.is_mouse_over()):
+                self._hide_suggestions('equipment')
+        elif box_type == 'user':
+            if focussed_widget != self.user_id_entry and (not self.user_suggestion_box or not self.user_suggestion_box.is_mouse_over()):
+                self._hide_suggestions('user')
+
+    def _update_user_suggestions(self, event=None):
+        query = self.user_id_entry.get()
+        if not query:
+            self._hide_suggestions('user')
+            return
+
+        user_type = self.user_type_combo.get()
+        suggestions = []
+        format_function = None
+
+        if user_type == "Estudiante":
+            suggestions = self.student_model.get_students_by_partial_query(query)
+            format_function = lambda item: f"{item[0]} - {item[1]} - {item[2]}"
+        else: # Profesor
+            suggestions = self.profesor_model.get_professors_by_partial_query(query)
+            format_function = lambda item: f"{item[0]} - {item[1]}"
+
+        if not suggestions:
+            self._hide_suggestions('user')
+            return
+
+        if self.user_suggestion_box is None or not self.user_suggestion_box.winfo_exists():
+            self.user_suggestion_box = SuggestionBox(self, self.user_id_entry, self._on_user_suggestion_selected)
+
+        self.user_suggestion_box.update_suggestions(suggestions, format_function)
+        self.user_suggestion_box.show()
+
+    def _on_user_suggestion_selected(self, selected_identifier):
+        self.user_id_entry.delete(0, 'end')
+        self.user_id_entry.insert(0, selected_identifier)
+        self._hide_suggestions('user')
 
     def _scan_qr_code(self):
         """Activa la cámara para escanear un QR usando el detector de OpenCV."""
@@ -672,71 +712,6 @@ class EquipmentReturnDialog(ctk.CTkToplevel):
         self.cancel_btn = ctk.CTkButton(button_frame, text="Cancelar", command=self.destroy, font=get_font("normal", "bold"))
         self.cancel_btn.grid(row=0, column=0, padx=5, pady=5, sticky="e")
 
-class SuggestionBox(ctk.CTkToplevel):
-    def __init__(self, parent, entry_widget, callback):
-        super().__init__(parent)
-        self.entry_widget = entry_widget
-        self.callback = callback
-
-        self.overrideredirect(True)
-        self.wm_attributes("-topmost", True)
-
-        self.listbox = CTkListbox(self, command=self._on_select)
-        self.listbox.pack(expand=True, fill="both")
-
-        self.bind("<FocusOut>", self._on_focus_out)
-        self.listbox.bind("<Enter>", self._on_mouse_enter)
-        self.listbox.bind("<Leave>", self._on_mouse_leave)
-        self._mouse_over = False
-
-    def show(self):
-        x = self.entry_widget.winfo_rootx()
-        y = self.entry_widget.winfo_rooty() + self.entry_widget.winfo_height()
-        width = self.entry_widget.winfo_width()
-        self.geometry(f"{width}x150+{x}+{y}")
-        self.lift()
-        self.deiconify()
-
-    def hide(self):
-        self.withdraw()
-
-    def update_suggestions(self, suggestions):
-        # Clear existing items safely by removing the listbox and recreating it
-        try:
-            self.listbox.destroy()
-            self.listbox = CTkListbox(self, command=self._on_select)
-            self.listbox.pack(expand=True, fill="both")
-            self.listbox.bind("<Enter>", self._on_mouse_enter)
-            self.listbox.bind("<Leave>", self._on_mouse_leave)
-        except Exception as e:
-            print(f"Error updating listbox: {e}")
-            return
-        
-        # Add new suggestions if there are any
-        if suggestions:
-            for code, name in suggestions:
-                try:
-                    self.listbox.insert("end", f"{code} - {name or 'N/A'}")
-                except Exception as e:
-                    print(f"Error adding suggestion {code}: {e}")
-
-    def _on_select(self, selected_item):
-        code = selected_item.split(" - ")[0]
-        self.callback(code)
-        self.hide()
-
-    def _on_focus_out(self, event=None):
-        if not self.is_mouse_over():
-            self.hide()
-
-    def _on_mouse_enter(self, event=None):
-        self._mouse_over = True
-
-    def _on_mouse_leave(self, event=None):
-        self._mouse_over = False
-
-    def is_mouse_over(self):
-        return self._mouse_over
 
     def _save_return(self):
         # This is a placeholder. Implement the save logic here.

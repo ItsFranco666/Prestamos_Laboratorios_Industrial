@@ -40,6 +40,20 @@ class StudentModel:
         student = cursor.fetchone()
         conn.close()
         return student
+
+    def get_students_by_partial_query(self, query):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        search_query = f'%{query}%'
+        cursor.execute('''
+            SELECT codigo, nombre, cedula FROM estudiantes 
+            WHERE CAST(codigo AS TEXT) LIKE ? OR nombre LIKE ? OR CAST(cedula AS TEXT) LIKE ?
+            ORDER BY nombre ASC 
+            LIMIT 10
+        ''', (search_query, search_query, search_query))
+        items = cursor.fetchall()
+        conn.close()
+        return items
     
     def add_student(self, codigo, nombre, cedula, proyecto_id):
         conn = self.db_manager.get_connection()
@@ -150,6 +164,20 @@ class ProfesorModel:
         professor = cursor.fetchone()
         conn.close()
         return professor
+
+    def get_professors_by_partial_query(self, query):
+        conn = self.db_manager.get_connection()
+        cursor = conn.cursor()
+        search_query = f'%{query}%'
+        cursor.execute('''
+            SELECT cedula, nombre FROM profesores 
+            WHERE CAST(cedula AS TEXT) LIKE ? OR nombre LIKE ?
+            ORDER BY nombre ASC 
+            LIMIT 10
+        ''', (search_query, search_query))
+        items = cursor.fetchall()
+        conn.close()
+        return items
     
     def add_profesor(self, cedula, nombre, proyecto_id):
         conn = self.db_manager.get_connection()

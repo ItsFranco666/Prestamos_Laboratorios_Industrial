@@ -37,6 +37,7 @@ a = Analysis(
         'pyzbar.pyzbar',
         'cv2',
         'tkinter',
+        'CTkListbox',
     ],
     hookspath=[],
     hooksconfig={},

@@ -2,8 +2,8 @@
 # UTF-8
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 0, 0),
-    prodvers=(1, 0, 0, 0),
+    filevers=(0, 8, 0),
+    prodvers=(0, 8, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -19,11 +19,11 @@ VSVersionInfo(
           [
             StringStruct(u'CompanyName', u'Universidad Distrital FJdC'),
             StringStruct(u'FileDescription', u'Sistema para gestionar préstamos de salas o equipos de laboratorios'),
-            StringStruct(u'FileVersion', u'1.0.0.0'),
+            StringStruct(u'FileVersion', u'0.8.0'),
             StringStruct(u'InternalName', u'SistemaGestionLaboratorios'),
-            StringStruct(u'OriginalFilename', u'Sistema de Gestion de Laboratorios.exe'),
-            StringStruct(u'ProductName', u'Sistema de Gestión de Laboratorios'),
-            StringStruct(u'ProductVersion', u'1.0.0.0')
+            StringStruct(u'OriginalFilename', u'Sistema_de_Gestión_de_Laboratorios_v0.8.0.exe'),
+            StringStruct(u'ProductName', u'Sistema_de_Gestión_de_Laboratorios_v0.8.0'),
+            StringStruct(u'ProductVersion', u'0.8.0')
           ]
         )
       ]),
