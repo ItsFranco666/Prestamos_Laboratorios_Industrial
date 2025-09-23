@@ -56,7 +56,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Sistema de Gestión de Laboratorios',
+    name='Sistema_de_Gestión_de_Laboratorios_v0.8.0',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
